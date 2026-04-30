@@ -51,3 +51,7 @@ These functions call the existing in-memory catalog service and map outcomes int
 - No framework route decorators
 - No persistence or external provider integration
 - Not production-ready
+
+## HTTP parity
+
+The local FastAPI routes delegate to transport handlers and return the same deterministic envelope shape and status mapping.

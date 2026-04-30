@@ -65,3 +65,7 @@ These are local functions only and are intended to be adapted into a future HTTP
 - No persistence/database.
 - Uses only synthetic sample data.
 - Not production-ready and not a complete emissions data standard implementation.
+
+## HTTP adapter mapping (local)
+
+`GET /factors` and `GET /factors/{factor_id}` are exposed through a thin FastAPI adapter that reuses the transport envelope contract.

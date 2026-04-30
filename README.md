@@ -35,3 +35,7 @@ This remains framework-free and does **not** start a real HTTP server.
 See:
 - `docs/transport-boundary.md`
 - `docs/api-contract.md`
+
+## Local HTTP adapter
+
+A thin FastAPI adapter is available for local testing only. It delegates route behavior to existing transport handlers and does not add deployment, auth, database, or external provider integrations. See `docs/http-adapter.md`.
