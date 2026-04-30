@@ -12,3 +12,6 @@
 Transport-boundary evidence has been added in local deterministic tests for envelope serialization, status mapping, and handler behavior.
 
 - Evidence: HTTP adapter parity tests cover list, detail, invalid filter, and not-found behavior against transport envelopes.
+
+- Evidence: OpenAPI inspection tests verify deterministic metadata/path presence without publishing generated artifacts.
+- Evidence: HTTP contract tests verify supported query keys and deterministic invalid-query envelope behavior.

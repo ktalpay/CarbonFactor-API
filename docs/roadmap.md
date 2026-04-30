@@ -19,3 +19,5 @@
 - Publish/release automation
 
 - Added local-only FastAPI adapter as pre-alpha transport wiring; production hardening remains out of scope.
+
+- Add stricter HTTP contract tests (query validation and OpenAPI inspection) while preserving pre-alpha local-only scope.

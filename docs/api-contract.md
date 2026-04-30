@@ -3,7 +3,7 @@
 ## Current Status
 
 - Status: **pre-alpha**
-- HTTP server: **not implemented yet**
+- HTTP server: **thin FastAPI adapter for local testing only**
 - Contract style: deterministic in-memory Python models and service behavior
 - Transport boundary: deterministic local envelope + status mapping layer (no framework)
 
@@ -69,3 +69,8 @@ These are local functions only and are intended to be adapted into a future HTTP
 ## HTTP adapter mapping (local)
 
 `GET /factors` and `GET /factors/{factor_id}` are exposed through a thin FastAPI adapter that reuses the transport envelope contract.
+
+
+## HTTP query contract
+
+`GET /factors` accepts `category`, `activity`, `region`, and `year`. Unsupported query keys are normalized into deterministic `invalid_query` envelope errors. OpenAPI contract inspection is test-covered, but no generated OpenAPI artifact is published in-repo.

@@ -6,7 +6,7 @@ CarbonFactor API is currently in **pre-alpha** status.
 
 This repository currently provides a deterministic, in-memory API contract foundation for carbon factor lookup behavior.
 
-- No HTTP server is implemented yet.
+- FastAPI adapter exists for local-only contract testing (pre-alpha).
 - No database dependency is included.
 - Only synthetic sample factor data is included.
 
@@ -39,3 +39,8 @@ See:
 ## Local HTTP adapter
 
 A thin FastAPI adapter is available for local testing only. It delegates route behavior to existing transport handlers and does not add deployment, auth, database, or external provider integrations. See `docs/http-adapter.md`.
+
+
+## HTTP contract hardening
+
+`GET /factors` supports only `category`, `activity`, `region`, and `year` query parameters. Unsupported query keys return a deterministic transport error envelope (HTTP 400, `invalid_query`). Unknown framework routes (for example `/unknown`) remain FastAPI-native `404 Not Found` responses and are intentionally not wrapped by transport envelopes.
