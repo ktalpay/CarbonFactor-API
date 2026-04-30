@@ -1,31 +1,28 @@
 """Route wiring for the thin HTTP adapter."""
 
-from fastapi import Response
+from fastapi import Request, Response
 
+from carbonfactor_api.http.query import build_factor_query, unsupported_query_envelope, unsupported_query_keys
 from carbonfactor_api.transport.handlers import handle_get_factor, handle_list_factors
 
 
 def register_routes(app) -> None:
     @app.get("/factors")
     def list_factors(
+        request: Request,
         response: Response,
         category: str | None = None,
         activity: str | None = None,
         region: str | None = None,
         year: int | None = None,
-        unsupported: str | None = None,
     ) -> dict:
-        query = {
-            key: value
-            for key, value in {
-                "category": category,
-                "activity": activity,
-                "region": region,
-                "year": year,
-                "unsupported": unsupported,
-            }.items()
-            if value is not None
-        }
+        query = build_factor_query(category=category, activity=activity, region=region, year=year)
+        unsupported_keys = unsupported_query_keys(request)
+        if unsupported_keys:
+            envelope = unsupported_query_envelope(unsupported_keys).to_dict()
+            response.status_code = envelope["status"]
+            return envelope
+
         envelope = handle_list_factors(query).to_dict()
         response.status_code = envelope["status"]
         return envelope

@@ -55,3 +55,8 @@ These functions call the existing in-memory catalog service and map outcomes int
 ## HTTP parity
 
 The local FastAPI routes delegate to transport handlers and return the same deterministic envelope shape and status mapping.
+
+
+## Error boundary behavior
+
+Transport handlers emit deterministic envelopes for known routes (`/factors`, `/factors/{factor_id}`). Framework-level unknown routes are intentionally not intercepted by transport and remain native FastAPI 404 responses.

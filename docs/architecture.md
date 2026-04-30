@@ -23,3 +23,8 @@ A new `transport/` package now sits above catalog/services and provides envelope
 ## FastAPI adapter layer
 
 A minimal FastAPI layer sits above transport handlers for local HTTP parity tests. Business logic remains in catalog and transport modules.
+
+
+## HTTP boundary notes
+
+Route functions stay thin and delegate to transport handlers. Query parsing/validation helpers in the HTTP layer only shape supported query keys and normalize unknown query parameters into deterministic transport errors.
