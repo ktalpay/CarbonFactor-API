@@ -19,3 +19,7 @@ A future run can add an HTTP server adapter after contracts stabilize. That adap
 ## Transport Boundary Layer
 
 A new `transport/` package now sits above catalog/services and provides envelope objects, status mapping, serialization helpers, and local handler functions. This layer is intentionally framework-agnostic so a future HTTP adapter can call into it without changing core contract behavior.
+
+## FastAPI adapter layer
+
+A minimal FastAPI layer sits above transport handlers for local HTTP parity tests. Business logic remains in catalog and transport modules.

@@ -10,3 +10,5 @@
 
 
 Transport-boundary evidence has been added in local deterministic tests for envelope serialization, status mapping, and handler behavior.
+
+- Evidence: HTTP adapter parity tests cover list, detail, invalid filter, and not-found behavior against transport envelopes.

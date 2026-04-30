@@ -17,3 +17,5 @@
 - External API integrations
 - Database infrastructure
 - Publish/release automation
+
+- Added local-only FastAPI adapter as pre-alpha transport wiring; production hardening remains out of scope.
