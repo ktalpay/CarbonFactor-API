@@ -44,3 +44,11 @@ A thin FastAPI adapter is available for local testing only. It delegates route b
 ## HTTP contract hardening
 
 `GET /factors` supports only `category`, `activity`, `region`, and `year` query parameters. Unsupported query keys return a deterministic transport error envelope (HTTP 400, `invalid_query`) with `details.unsupported_query_keys` listing the exact keys. Unknown framework routes (for example `/unknown`) remain FastAPI-native `404 Not Found` responses and are intentionally not wrapped by transport envelopes.
+
+
+## Evidence documentation
+
+- `docs/evidence/index.md`
+- `docs/evidence/api-architecture-evidence.md`
+
+These documents consolidate pre-alpha technical evidence and current API-layer behavior for local-only review.

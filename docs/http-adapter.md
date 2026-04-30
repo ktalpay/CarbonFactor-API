@@ -32,3 +32,6 @@ The project includes a thin FastAPI adapter for local development and testing.
 ## OpenAPI checks
 
 Tests validate deterministic title/version and route/query-parameter visibility in generated OpenAPI, without committing generated spec artifacts.
+
+
+See also evidence docs: `docs/evidence/index.md`, `docs/evidence/api-architecture-evidence.md`.
