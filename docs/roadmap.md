@@ -3,7 +3,7 @@
 ## Near-term
 
 1. Strengthen contract and catalog tests with additional negative-path coverage.
-2. Introduce a minimal HTTP server adapter only after contract stability improves.
+2. Introduce a minimal HTTP server adapter that reuses the existing transport boundary once contract stability improves.
 3. Define configuration profile for swapping synthetic data with validated local data artifacts.
 
 ## Integration Direction

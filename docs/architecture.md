@@ -15,3 +15,7 @@ This repository currently establishes a deterministic contract foundation for ca
 ## Future Direction (Conservative)
 
 A future run can add an HTTP server adapter after contracts stabilize. That adapter should map transport concerns onto the already-tested contract/service layer.
+
+## Transport Boundary Layer
+
+A new `transport/` package now sits above catalog/services and provides envelope objects, status mapping, serialization helpers, and local handler functions. This layer is intentionally framework-agnostic so a future HTTP adapter can call into it without changing core contract behavior.
