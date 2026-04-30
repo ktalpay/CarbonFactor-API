@@ -16,25 +16,25 @@ HTTP request
 
 ## Modules and responsibilities
 
-- **FastAPI adapter (`carbonfactor_api/http/app.py`)**
+- **FastAPI adapter (`src/carbonfactor_api/http/app.py`)**
   - Exposes `GET /health`, `GET /factors`, and `GET /factors/{factor_id}`.
   - Translates HTTP inputs into transport-layer calls.
   - Applies explicit supported-query validation for `GET /factors`.
 
-- **HTTP query validation (`carbonfactor_api/http/app.py`)**
+- **HTTP query validation (`src/carbonfactor_api/http/app.py`)**
   - Allows only `category`, `activity`, `region`, and `year`.
   - Produces deterministic `invalid_query` transport envelopes for unsupported keys.
 
-- **Transport boundary (`carbonfactor_api/transport/*`)**
+- **Transport boundary (`src/carbonfactor_api/transport/`)**
   - Defines response and error envelopes.
   - Maps local outcomes to deterministic HTTP-style status codes.
   - Serializes contract objects into envelope-compatible payloads.
 
-- **Catalog service (`carbonfactor_api/catalog.py`)**
+- **Catalog service (`src/carbonfactor_api/catalog.py`)**
   - Performs deterministic list/detail/filter operations over synthetic in-memory factors.
   - Does not depend on external infrastructure.
 
-- **Contract DTOs and errors (`carbonfactor_api/contracts.py`, `carbonfactor_api/errors.py`)**
+- **Contract DTOs and errors (`src/carbonfactor_api/contracts.py`, `src/carbonfactor_api/errors.py`)**
   - Define factor/query structures and deterministic error semantics used across layers.
 
 ## Contract boundaries
