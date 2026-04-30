@@ -74,3 +74,6 @@ These are local functions only and are intended to be adapted into a future HTTP
 ## HTTP query contract
 
 `GET /factors` accepts `category`, `activity`, `region`, and `year`. Unsupported query keys are normalized into deterministic `invalid_query` envelope errors with `unsupported_query_keys` details. OpenAPI contract inspection is test-covered, but no generated OpenAPI artifact is published in-repo.
+
+
+See also evidence docs: `docs/evidence/index.md`, `docs/evidence/api-architecture-evidence.md`.
