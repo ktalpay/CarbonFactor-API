@@ -25,7 +25,7 @@ The project includes a thin FastAPI adapter for local development and testing.
 
 `GET /factors` supports: `category`, `activity`, `region`, `year`.
 
-- Unsupported query params return transport-envelope `invalid_query` (HTTP 400).
+- Unsupported query params return transport-envelope `invalid_query` (HTTP 400) with deterministic `details.unsupported_query_keys`.
 - `year` remains typed as integer at the adapter boundary.
 - Unknown paths are framework-level FastAPI 404 responses and are not envelope-wrapped.
 

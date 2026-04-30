@@ -2,7 +2,7 @@
 
 from fastapi import Request, Response
 
-from carbonfactor_api.http.query import build_factor_query, unsupported_query_keys
+from carbonfactor_api.http.query import build_factor_query, unsupported_query_envelope, unsupported_query_keys
 from carbonfactor_api.transport.handlers import handle_get_factor, handle_list_factors
 
 
@@ -19,7 +19,10 @@ def register_routes(app) -> None:
         query = build_factor_query(category=category, activity=activity, region=region, year=year)
         unsupported_keys = unsupported_query_keys(request)
         if unsupported_keys:
-            query["unsupported"] = ",".join(unsupported_keys)
+            envelope = unsupported_query_envelope(unsupported_keys).to_dict()
+            response.status_code = envelope["status"]
+            return envelope
+
         envelope = handle_list_factors(query).to_dict()
         response.status_code = envelope["status"]
         return envelope

@@ -62,7 +62,7 @@ def test_unsupported_query_param_returns_invalid_query_envelope() -> None:
     assert response.status_code == 400
     assert payload["status"] == 400
     assert payload["error"]["code"] == "invalid_query"
-    assert payload["error"]["details"] == {"reason": "unsupported filters: unsupported"}
+    assert payload["error"]["details"] == {"unsupported_query_keys": ["foo"]}
 
 
 def test_invalid_year_behavior_is_deterministic() -> None:
@@ -76,3 +76,13 @@ def test_invalid_year_behavior_is_deterministic() -> None:
         "message": "Invalid query",
         "details": {"reason": "year must be positive"},
     }
+
+
+def test_multiple_unsupported_query_params_are_sorted_deterministically() -> None:
+    client = TestClient(create_app())
+    response = client.get("/factors", params={"zeta": "1", "alpha": "2"})
+    payload = response.json()
+    assert response.status_code == 400
+    assert payload["status"] == 400
+    assert payload["error"]["code"] == "invalid_query"
+    assert payload["error"]["details"] == {"unsupported_query_keys": ["alpha", "zeta"]}
