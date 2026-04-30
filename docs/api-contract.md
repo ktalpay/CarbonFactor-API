@@ -5,6 +5,7 @@
 - Status: **pre-alpha**
 - HTTP server: **not implemented yet**
 - Contract style: deterministic in-memory Python models and service behavior
+- Transport boundary: deterministic local envelope + status mapping layer (no framework)
 
 ## DTO Models
 
@@ -25,65 +26,42 @@
 - `region`
 - `year`
 
+## Transport Contract Layer
+
+Envelope shape:
+- `status`
+- `data`
+- `error`
+
+Error shape:
+- `code`
+- `message`
+- `details`
+
+Status mappings:
+- `200` success
+- `400` invalid query / unsupported filter
+- `404` not found
+- `422` validation-style error (reserved)
+
 ## Behavior
 
 - List factors with deterministic sorting by `id`.
 - Get factor by exact `id`.
 - Search by supported filters (`category`, `activity`, `region`, `year`).
 - Return structured error objects for not-found and invalid queries.
+- Serialize responses through deterministic transport helpers.
 
-## Error Model
+## Local Handler Entry Points
 
-`ApiError` includes:
-- `code`
-- `message`
-- `details`
+- `handle_list_factors(query: dict)`
+- `handle_get_factor(factor_id: str)`
 
-Common codes in this phase:
-- `not_found`
-- `invalid_query`
-- `unsupported_filter`
-
-## Markdown Contract Examples
-
-### List Factors (conceptual)
-
-Request:
-
-```text
-list_factors()
-```
-
-Response excerpt:
-
-```json
-{
-  "factors": [
-    {"id": "f-001", "category": "electricity"}
-  ],
-  "total": 3
-}
-```
-
-### Factor Detail (conceptual)
-
-Request:
-
-```text
-get_factor_by_id("f-001")
-```
-
-Response excerpt:
-
-```json
-{
-  "factor": {"id": "f-001", "activity": "grid_consumption"}
-}
-```
+These are local functions only and are intended to be adapted into a future HTTP framework.
 
 ## Limitations
 
-- No HTTP transport layer.
+- No HTTP transport server.
 - No persistence/database.
 - Uses only synthetic sample data.
 - Not production-ready and not a complete emissions data standard implementation.

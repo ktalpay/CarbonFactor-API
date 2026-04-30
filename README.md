@@ -20,3 +20,18 @@ This repository currently provides a deterministic, in-memory API contract found
 See:
 - `docs/api-contract.md`
 - `docs/architecture.md`
+
+## Transport Boundary
+
+A local transport contract layer now exists under `carbonfactor_api.transport` with:
+
+- deterministic response envelopes (`ResponseEnvelope`, `ErrorEnvelope`)
+- HTTP-style status mapping helpers
+- serialization helpers for contract DTOs and responses
+- local handler functions for list/detail behaviors
+
+This remains framework-free and does **not** start a real HTTP server.
+
+See:
+- `docs/transport-boundary.md`
+- `docs/api-contract.md`
