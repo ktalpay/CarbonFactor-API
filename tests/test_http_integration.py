@@ -1,28 +1,36 @@
+from fastapi.testclient import TestClient
+
 from carbonfactor_api.http.app import create_app
 
 
 def test_route_status_matches_envelope_status() -> None:
-    app = create_app()
-    payload = app.dispatch("GET", "/factors")
-    assert payload["status"] == 200
+    client = TestClient(create_app())
+    response = client.get("/factors")
+    payload = response.json()
+    assert response.status_code == payload["status"]
 
 
 def test_response_json_has_deterministic_keys() -> None:
-    app = create_app()
-    payload = app.dispatch("GET", "/factors")
+    client = TestClient(create_app())
+    response = client.get("/factors")
+    payload = response.json()
     assert list(payload.keys()) == ["status", "data", "error"]
 
 
 def test_unsupported_filter_matches_transport_behavior() -> None:
-    app = create_app()
-    payload = app.dispatch("GET", "/factors", unsupported="x")
+    client = TestClient(create_app())
+    response = client.get("/factors", params={"unsupported": "x"})
+    payload = response.json()
+    assert response.status_code == 400
     assert payload["status"] == 400
     assert payload["error"]["code"] == "invalid_query"
 
 
 def test_not_found_behavior_is_consistent() -> None:
-    app = create_app()
-    payload = app.dispatch("GET", "/factors/does-not-exist")
+    client = TestClient(create_app())
+    response = client.get("/factors/does-not-exist")
+    payload = response.json()
+    assert response.status_code == 404
     assert payload["status"] == 404
     assert payload["error"] == {
         "code": "not_found",

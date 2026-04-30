@@ -1,6 +1,6 @@
 """Route wiring for the thin HTTP adapter."""
 
-from __future__ import annotations
+from fastapi import Response
 
 from carbonfactor_api.transport.handlers import handle_get_factor, handle_list_factors
 
@@ -8,11 +8,12 @@ from carbonfactor_api.transport.handlers import handle_get_factor, handle_list_f
 def register_routes(app) -> None:
     @app.get("/factors")
     def list_factors(
+        response: Response,
         category: str | None = None,
         activity: str | None = None,
         region: str | None = None,
         year: int | None = None,
-        **extra_filters: str,
+        unsupported: str | None = None,
     ) -> dict:
         query = {
             key: value
@@ -21,12 +22,16 @@ def register_routes(app) -> None:
                 "activity": activity,
                 "region": region,
                 "year": year,
+                "unsupported": unsupported,
             }.items()
             if value is not None
         }
-        query.update(extra_filters)
-        return handle_list_factors(query).to_dict()
+        envelope = handle_list_factors(query).to_dict()
+        response.status_code = envelope["status"]
+        return envelope
 
     @app.get("/factors/{factor_id}")
-    def get_factor(factor_id: str) -> dict:
-        return handle_get_factor(factor_id).to_dict()
+    def get_factor(factor_id: str, response: Response) -> dict:
+        envelope = handle_get_factor(factor_id).to_dict()
+        response.status_code = envelope["status"]
+        return envelope
