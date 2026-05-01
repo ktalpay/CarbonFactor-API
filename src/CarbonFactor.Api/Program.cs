@@ -1,5 +1,6 @@
 using System.Net.Mime;
 using System.Text.Json;
+using CarbonFactor.Api.Domain;
 using CarbonFactor.Api.Endpoints;
 using CarbonFactor.Api.Errors;
 using CarbonFactor.Api.Storage;
@@ -8,6 +9,8 @@ using Microsoft.AspNetCore.Diagnostics;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton<ICarbonFactorStore, InMemoryCarbonFactorStore>();
+builder.Services.AddSingleton<CarbonFactorNormalizer>();
+builder.Services.AddSingleton<CarbonFactorValidator>();
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;

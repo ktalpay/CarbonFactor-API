@@ -1,11 +1,10 @@
-using CarbonFactor.Api.Contracts;
+using DomainCarbonFactor = CarbonFactor.Api.Domain.CarbonFactor;
 
 namespace CarbonFactor.Api.Storage;
 
 public interface ICarbonFactorStore
 {
-    CarbonFactorRecord Add(CarbonFactorCreateRequest request);
+    CarbonFactorRecord Add(DomainCarbonFactor factor);
 
     CarbonFactorRecord? Get(Guid id);
 }
-

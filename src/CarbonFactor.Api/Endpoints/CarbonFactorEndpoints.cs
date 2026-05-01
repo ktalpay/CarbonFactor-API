@@ -1,4 +1,5 @@
 using CarbonFactor.Api.Contracts;
+using CarbonFactor.Api.Domain;
 using CarbonFactor.Api.Errors;
 using CarbonFactor.Api.Storage;
 
@@ -6,28 +7,6 @@ namespace CarbonFactor.Api.Endpoints;
 
 public static class CarbonFactorEndpoints
 {
-    private static readonly HashSet<string> SupportedCategories = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "energy",
-        "transport",
-        "materials",
-        "waste",
-        "agriculture",
-        "water",
-        "other"
-    };
-
-    private static readonly HashSet<string> SupportedUnits = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "kg_co2e",
-        "g_co2e",
-        "t_co2e",
-        "kg_co2e_per_kwh",
-        "kg_co2e_per_liter",
-        "kg_co2e_per_km",
-        "kg_co2e_per_unit"
-    };
-
     public static IEndpointRouteBuilder MapCarbonFactorEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/carbon-factors")
@@ -77,10 +56,13 @@ public static class CarbonFactorEndpoints
         return Results.Ok(ToResponse(factor));
     }
 
-    private static IResult Create(CarbonFactorCreateRequest? request, ICarbonFactorStore store, HttpContext context)
+    private static IResult Create(
+        CarbonFactorCreateRequest? request,
+        ICarbonFactorStore store,
+        CarbonFactorValidator validator,
+        HttpContext context)
     {
-        var errors = Validate(request);
-        if (errors.Count > 0)
+        if (request is null)
         {
             return Results.BadRequest(ApiErrorResponse.Create(
                 StatusCodes.Status400BadRequest,
@@ -88,56 +70,24 @@ public static class CarbonFactorEndpoints
                 "Validation failed.",
                 "One or more request fields failed validation.",
                 context.TraceIdentifier,
-                errors));
+                [new ApiValidationError("body", "required", "Request body is required.")]));
         }
 
-        var factor = store.Add(request!);
+        var result = validator.Create(Guid.NewGuid(), ToInput(request));
+        if (!result.IsValid)
+        {
+            return Results.BadRequest(ApiErrorResponse.Create(
+                StatusCodes.Status400BadRequest,
+                "validation_failed",
+                "Validation failed.",
+                "One or more request fields failed validation.",
+                context.TraceIdentifier,
+                result.Errors.Select(ToApiError).ToArray()));
+        }
+
+        var factor = store.Add(result.Factor!);
 
         return Results.Created($"/api/carbon-factors/{factor.Id}", ToResponse(factor));
-    }
-
-    private static IReadOnlyList<ApiValidationError> Validate(CarbonFactorCreateRequest? request)
-    {
-        if (request is null)
-        {
-            return [new ApiValidationError("body", "required", "Request body is required.")];
-        }
-
-        var errors = new List<ApiValidationError>();
-
-        if (string.IsNullOrWhiteSpace(request.Name))
-        {
-            errors.Add(new ApiValidationError("name", "required", "Name is required."));
-        }
-
-        if (string.IsNullOrWhiteSpace(request.Category))
-        {
-            errors.Add(new ApiValidationError("category", "required", "Category is required."));
-        }
-        else if (!SupportedCategories.Contains(request.Category.Trim()))
-        {
-            errors.Add(new ApiValidationError("category", "unsupported_category", "Unsupported carbon factor category."));
-        }
-
-        if (string.IsNullOrWhiteSpace(request.Unit))
-        {
-            errors.Add(new ApiValidationError("unit", "required", "Unit is required."));
-        }
-        else if (!SupportedUnits.Contains(request.Unit.Trim()))
-        {
-            errors.Add(new ApiValidationError("unit", "unsupported_unit", "Unsupported emission factor unit."));
-        }
-
-        if (request.EmissionValue is null)
-        {
-            errors.Add(new ApiValidationError("emissionValue", "required", "Emission value is required."));
-        }
-        else if (request.EmissionValue <= 0)
-        {
-            errors.Add(new ApiValidationError("emissionValue", "invalid_range", "Emission value must be greater than zero."));
-        }
-
-        return errors;
     }
 
     private static CarbonFactorResponse ToResponse(CarbonFactorRecord factor) =>
@@ -150,5 +100,17 @@ public static class CarbonFactorEndpoints
             factor.Source,
             factor.Region,
             factor.EffectiveYear);
-}
 
+    private static CarbonFactorInput ToInput(CarbonFactorCreateRequest request) =>
+        new(
+            request.Name,
+            request.Category,
+            request.Unit,
+            request.EmissionValue,
+            request.Source,
+            request.Region,
+            request.EffectiveYear);
+
+    private static ApiValidationError ToApiError(CarbonFactorValidationError error) =>
+        new(error.Field, error.Code, error.Message);
+}
