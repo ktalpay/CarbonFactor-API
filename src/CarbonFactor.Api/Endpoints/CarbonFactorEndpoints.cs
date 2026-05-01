@@ -22,6 +22,11 @@ public static class CarbonFactorEndpoints
             .Produces<CarbonFactorQueryResponse>(StatusCodes.Status200OK)
             .Produces<ApiErrorResponse>(StatusCodes.Status400BadRequest);
 
+        group.MapGet("/summary", Summary)
+            .WithName("GetCarbonFactorSummary")
+            .WithSummary("Gets technical carbon factor dataset summary counts.")
+            .Produces<CarbonFactorSummaryResponse>(StatusCodes.Status200OK);
+
         group.MapGet("/{id}", GetById)
             .WithName("GetCarbonFactorById")
             .WithSummary("Gets a carbon factor by identifier.")
@@ -44,6 +49,26 @@ public static class CarbonFactorEndpoints
             .Produces<ApiErrorResponse>(StatusCodes.Status400BadRequest);
 
         return app;
+    }
+
+    private static IResult Summary(ICarbonFactorStore store)
+    {
+        var records = store.List();
+        var effectiveYears = records
+            .Where(item => item.EffectiveYear is not null)
+            .Select(item => item.EffectiveYear!.Value)
+            .ToArray();
+
+        var response = new CarbonFactorSummaryResponse(
+            records.Count,
+            CountBy(records, item => item.Category),
+            CountBy(records, item => item.Unit),
+            CountBy(records, item => item.Source),
+            CountBy(records, item => item.Region),
+            effectiveYears.Length == 0 ? null : effectiveYears.Min(),
+            effectiveYears.Length == 0 ? null : effectiveYears.Max());
+
+        return Results.Ok(response);
     }
 
     private static IResult Query(
@@ -320,4 +345,15 @@ public static class CarbonFactorEndpoints
 
         return errors;
     }
+
+    private static IReadOnlyList<CarbonFactorSummaryCount> CountBy(
+        IEnumerable<CarbonFactorRecord> records,
+        Func<CarbonFactorRecord, string?> keySelector) =>
+        records
+            .Select(keySelector)
+            .Where(key => !string.IsNullOrWhiteSpace(key))
+            .GroupBy(key => key!, StringComparer.OrdinalIgnoreCase)
+            .Select(group => new CarbonFactorSummaryCount(group.Key, group.Count()))
+            .OrderBy(item => item.Key, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
 }
