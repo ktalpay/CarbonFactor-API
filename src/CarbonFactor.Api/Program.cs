@@ -3,14 +3,21 @@ using System.Text.Json;
 using CarbonFactor.Api.Domain;
 using CarbonFactor.Api.Endpoints;
 using CarbonFactor.Api.Errors;
+using CarbonFactor.Api.Options;
 using CarbonFactor.Api.Storage;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton<ICarbonFactorStore, InMemoryCarbonFactorStore>();
 builder.Services.AddSingleton<CarbonFactorNormalizer>();
 builder.Services.AddSingleton<CarbonFactorValidator>();
+builder.Services.AddSingleton<IValidateOptions<CarbonFactorApiOptions>, CarbonFactorApiOptionsValidator>();
+builder.Services
+    .AddOptions<CarbonFactorApiOptions>()
+    .Bind(builder.Configuration.GetSection(CarbonFactorApiOptions.SectionName))
+    .ValidateOnStart();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -22,8 +29,9 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 });
 
 var app = builder.Build();
+var apiOptions = app.Services.GetRequiredService<IOptions<CarbonFactorApiOptions>>().Value;
 
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || apiOptions.EnableSwaggerInProduction)
 {
     app.UseSwagger();
     app.UseSwaggerUI(options =>

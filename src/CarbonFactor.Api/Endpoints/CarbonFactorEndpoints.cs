@@ -1,15 +1,15 @@
 using CarbonFactor.Api.Contracts;
 using CarbonFactor.Api.Domain;
 using CarbonFactor.Api.Errors;
+using CarbonFactor.Api.Options;
 using CarbonFactor.Api.Storage;
+using Microsoft.Extensions.Options;
 
 namespace CarbonFactor.Api.Endpoints;
 
 public static class CarbonFactorEndpoints
 {
     private const int DefaultPage = 1;
-    private const int DefaultPageSize = 25;
-    private const int MaxPageSize = 100;
 
     public static IEndpointRouteBuilder MapCarbonFactorEndpoints(this IEndpointRouteBuilder app)
     {
@@ -74,6 +74,7 @@ public static class CarbonFactorEndpoints
     private static IResult Query(
         ICarbonFactorStore store,
         CarbonFactorNormalizer normalizer,
+        IOptions<CarbonFactorApiOptions> options,
         HttpContext context,
         string? category = null,
         string? unit = null,
@@ -84,7 +85,8 @@ public static class CarbonFactorEndpoints
         int? page = null,
         int? pageSize = null)
     {
-        var errors = ValidateQuery(normalizer, category, unit, page, pageSize);
+        var apiOptions = options.Value;
+        var errors = ValidateQuery(apiOptions, normalizer, category, unit, page, pageSize);
         if (errors.Count > 0)
         {
             return Results.BadRequest(ApiErrorResponse.Create(
@@ -102,7 +104,7 @@ public static class CarbonFactorEndpoints
         var normalizedRegion = normalizer.NormalizeOptionalText(region);
         var normalizedSearch = normalizer.NormalizeOptionalText(search);
         var currentPage = page ?? DefaultPage;
-        var currentPageSize = pageSize ?? DefaultPageSize;
+        var currentPageSize = pageSize ?? apiOptions.DefaultPageSize;
 
         var query = store.List().AsEnumerable();
 
@@ -309,6 +311,7 @@ public static class CarbonFactorEndpoints
         new(error.Field, error.Code, error.Message);
 
     private static IReadOnlyList<ApiValidationError> ValidateQuery(
+        CarbonFactorApiOptions options,
         CarbonFactorNormalizer normalizer,
         string? category,
         string? unit,
@@ -338,9 +341,9 @@ public static class CarbonFactorEndpoints
         {
             errors.Add(new ApiValidationError("pageSize", "invalid_range", "Page size must be greater than zero."));
         }
-        else if (pageSize > MaxPageSize)
+        else if (pageSize > options.MaxPageSize)
         {
-            errors.Add(new ApiValidationError("pageSize", "invalid_range", $"Page size must be less than or equal to {MaxPageSize}."));
+            errors.Add(new ApiValidationError("pageSize", "invalid_range", $"Page size must be less than or equal to {options.MaxPageSize}."));
         }
 
         return errors;
