@@ -26,6 +26,13 @@ public static class CarbonFactorEndpoints
             .Produces<CarbonFactorResponse>(StatusCodes.Status201Created)
             .Produces<ApiErrorResponse>(StatusCodes.Status400BadRequest);
 
+        group.MapPost("/batch", BatchIngest)
+            .WithName("BatchIngestCarbonFactors")
+            .WithSummary("Validates and ingests a batch of carbon factor records.")
+            .Accepts<CarbonFactorBatchIngestRequest>("application/json")
+            .Produces<CarbonFactorIngestionResponse>(StatusCodes.Status200OK)
+            .Produces<ApiErrorResponse>(StatusCodes.Status400BadRequest);
+
         return app;
     }
 
@@ -88,6 +95,72 @@ public static class CarbonFactorEndpoints
         var factor = store.Add(result.Factor!);
 
         return Results.Created($"/api/carbon-factors/{factor.Id}", ToResponse(factor));
+    }
+
+    private static IResult BatchIngest(
+        CarbonFactorBatchIngestRequest? request,
+        ICarbonFactorStore store,
+        CarbonFactorValidator validator,
+        HttpContext context)
+    {
+        if (request?.Items is null)
+        {
+            return Results.BadRequest(ApiErrorResponse.Create(
+                StatusCodes.Status400BadRequest,
+                "validation_failed",
+                "Validation failed.",
+                "One or more request fields failed validation.",
+                context.TraceIdentifier,
+                [new ApiValidationError("items", "required", "Items are required.")]));
+        }
+
+        if (request.Items.Count == 0)
+        {
+            return Results.BadRequest(ApiErrorResponse.Create(
+                StatusCodes.Status400BadRequest,
+                "validation_failed",
+                "Validation failed.",
+                "One or more request fields failed validation.",
+                context.TraceIdentifier,
+                [new ApiValidationError("items", "empty_batch", "Batch must contain at least one item.")]));
+        }
+
+        var results = new List<CarbonFactorIngestionItemResult>(request.Items.Count);
+        var accepted = 0;
+        var rejected = 0;
+
+        for (var index = 0; index < request.Items.Count; index++)
+        {
+            var item = request.Items[index];
+            var validation = validator.Create(Guid.NewGuid(), ToInput(item));
+            if (!validation.IsValid)
+            {
+                rejected++;
+                results.Add(new CarbonFactorIngestionItemResult(
+                    index,
+                    "rejected",
+                    null,
+                    validation.Errors.Select(ToApiError).ToArray()));
+                continue;
+            }
+
+            var record = store.Add(validation.Factor!);
+            accepted++;
+            results.Add(new CarbonFactorIngestionItemResult(
+                index,
+                "accepted",
+                record.Id.ToString("D"),
+                []));
+        }
+
+        var response = new CarbonFactorIngestionResponse(
+            request.Items.Count,
+            accepted,
+            rejected,
+            WarningCount: 0,
+            results);
+
+        return Results.Ok(response);
     }
 
     private static CarbonFactorResponse ToResponse(CarbonFactorRecord factor) =>
