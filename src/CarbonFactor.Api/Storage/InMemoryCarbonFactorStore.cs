@@ -16,4 +16,7 @@ public sealed class InMemoryCarbonFactorStore : ICarbonFactorStore
 
     public CarbonFactorRecord? Get(Guid id) =>
         records.TryGetValue(id, out var record) ? record : null;
+
+    public IReadOnlyList<CarbonFactorRecord> List() =>
+        records.Values.ToArray();
 }

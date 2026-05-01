@@ -7,4 +7,6 @@ public interface ICarbonFactorStore
     CarbonFactorRecord Add(DomainCarbonFactor factor);
 
     CarbonFactorRecord? Get(Guid id);
+
+    IReadOnlyList<CarbonFactorRecord> List();
 }
