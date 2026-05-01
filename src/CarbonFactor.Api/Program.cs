@@ -11,12 +11,26 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton<ICarbonFactorStore, InMemoryCarbonFactorStore>();
 builder.Services.AddSingleton<CarbonFactorNormalizer>();
 builder.Services.AddSingleton<CarbonFactorValidator>();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.CustomSchemaIds(type => type.FullName?.Replace('+', '.') ?? type.Name);
+});
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
 });
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "CarbonFactor API v1");
+    });
+}
 
 app.UseExceptionHandler(errorApp =>
 {
