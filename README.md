@@ -2,23 +2,26 @@
 
 CarbonFactor API is a .NET 8 API foundation for ingesting, validating, normalizing, querying, and summarizing carbon factor records.
 
-The project is intentionally small and reviewable. It demonstrates API contract consistency, domain validation boundaries, deterministic normalization, in-memory persistence, query pagination, and technical reporting-support summaries.
+The project is intentionally small and reviewable. It demonstrates API contract consistency, domain validation boundaries, deterministic normalization, in-memory storage, query pagination, and technical reporting-support summaries.
 
 ## What The API Does
 
 - Accepts single and batch carbon factor records.
 - Validates required fields, supported categories, supported units, numeric emission values, and effective-year bounds.
 - Normalizes common category and unit variations into stable values.
-- Stores accepted records in an in-memory repository.
+- Stores accepted records in an in-memory repository for demonstration.
 - Exposes lookup, query, pagination, and summary endpoints.
 - Returns predictable structured error responses.
 
 ## What The API Does Not Do
 
 - It does not include authentication or authorization yet.
-- It does not persist data beyond process lifetime.
+- It does not include an audit trail.
+- It does not include rate limiting.
+- It does not include durable persistence; data is not retained beyond process lifetime.
+- It does not run asynchronous batch processing.
 - It does not import CSV or spreadsheet files yet.
-- It does not perform assurance, certification, or regulatory report generation.
+- It does not produce regulatory reports or replace legal, accounting, or compliance review.
 - It does not include private data, customer data, credentials, or production secrets.
 
 ## Local Development
@@ -78,4 +81,6 @@ http://localhost:5000/swagger/v1/swagger.json
 
 ## Public-Safe Limitations
 
-This repository is a technical API foundation. The sample contracts and documentation are generic, and runtime configuration examples do not contain secrets.
+This repository is a technical reference and sample API. The in-memory store exists to demonstrate API contracts, validation, querying, and workflow boundaries. Durable persistence is intentionally deferred to a future task.
+
+The sample contracts and documentation are generic, and runtime configuration examples do not contain secrets. The API is not a substitute for legal, accounting, or compliance review.

@@ -2,7 +2,7 @@
 
 The summary endpoint exposes technical dataset counts that can support API consumers building dashboards, data-quality checks, or operational reporting views.
 
-This endpoint is not a regulatory compliance report and does not certify carbon accounting outputs.
+This endpoint returns reporting-support data only. It is not a regulatory report and is not a substitute for legal, accounting, or compliance review.
 
 ## Endpoint
 
@@ -60,5 +60,4 @@ This endpoint is not a regulatory compliance report and does not certify carbon 
 
 - The endpoint summarizes the active in-memory dataset only.
 - It does not apply calculations, accounting methods, or external assurance.
-- It does not produce certified regulatory reports.
-
+- It does not produce regulatory reports.

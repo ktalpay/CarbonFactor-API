@@ -43,7 +43,9 @@ Unsupported normalized values are rejected with deterministic validation errors.
 
 ## Current Persistence and Query Flow
 
-Persistence is currently in memory through `ICarbonFactorStore` and `InMemoryCarbonFactorStore`. Accepted records are held for the lifetime of the application process.
+Persistence is currently in memory only through `ICarbonFactorStore` and `InMemoryCarbonFactorStore`. Accepted records are held for the lifetime of the application process and are not durable.
+
+The in-memory store exists to demonstrate API contracts, validation, querying, and workflow boundaries. Durable persistence is intentionally deferred to a future task.
 
 Querying reads from the store, applies optional filters, sorts by name and identifier, and returns bounded pages with total counts. Summary data is computed from the current in-memory records.
 
@@ -62,9 +64,10 @@ The test suite covers:
 
 ## Risks and Limitations
 
-- Data is in memory and is lost when the process stops.
+- Data is in memory only and is lost when the process stops.
 - There is no authentication, authorization, rate limiting, or audit trail yet.
 - Batch ingestion is synchronous and does not include background jobs.
 - CSV/Excel import is not implemented.
 - Factor source metadata is intentionally lightweight.
-- The summary endpoint is a technical dataset summary, not an assurance or regulatory reporting feature.
+- The summary endpoint returns reporting-support data only and is not a regulatory report.
+- The API does not replace legal, accounting, or compliance review.
