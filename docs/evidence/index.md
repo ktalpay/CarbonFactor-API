@@ -1,6 +1,8 @@
 # Technical Evidence Index (Pre-Alpha)
 
-This index consolidates current, local-only technical evidence for CarbonFactor API. It is limited to deterministic behavior implemented in this repository with synthetic data.
+This index consolidates current, local-only technical evidence for CarbonOps-API.
+It is limited to deterministic behavior implemented in this repository with
+synthetic data.
 
 ## API contract foundation
 - **Implemented artifacts:** `src/carbonfactor_api/contracts.py`, `docs/api-contract.md`.

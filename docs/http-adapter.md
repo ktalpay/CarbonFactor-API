@@ -1,6 +1,8 @@
-# HTTP Adapter (FastAPI, local-only)
+# HTTP Adapter
 
-The project includes a thin FastAPI adapter for local development and testing.
+CarbonOps-API currently includes a thin FastAPI adapter for local development
+and testing. This adapter is part of the preserved pre-alpha behavior and is not
+the final production API hosting model.
 
 ## Scope
 
@@ -19,6 +21,8 @@ The project includes a thin FastAPI adapter for local development and testing.
 - Routes delegate to transport handlers and return deterministic envelopes.
 - No database, authentication, or external provider integrations are implemented.
 - Production hardening is intentionally out of scope at this stage.
+- CarbonOps-Web integration is not implemented.
+- CarbonOps-Parser execution is not implemented.
 
 
 ## Query behavior

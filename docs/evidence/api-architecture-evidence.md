@@ -1,6 +1,7 @@
 # API Architecture Evidence Summary (Pre-Alpha)
 
-This document summarizes current end-to-end API behavior implemented in this repository for local development with synthetic data.
+This document summarizes current CarbonOps-API behavior implemented in this
+repository for local development with synthetic data.
 
 ## End-to-end flow
 
@@ -59,7 +60,7 @@ HTTP request
 - Authentication/authorization/rate limiting.
 - Cloud/container orchestration specifics.
 - External provider integrations.
-- Cross-repository runtime coupling to CarbonFactor Parser or CarbonOps Assistant.
+- Cross-repository runtime coupling to CarbonOps-Parser or CarbonOps-Web.
 
 ## Why this remains pre-alpha
 

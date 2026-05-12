@@ -1,8 +1,10 @@
-# Transport Boundary (Pre-Alpha)
+# Transport Boundary
 
 ## Purpose
 
-The transport boundary provides deterministic request/response behavior without introducing a real web framework.
+The transport boundary provides deterministic request/response behavior for
+CarbonOps-API without tying application behavior to a specific production web
+framework.
 
 ## Envelope Structure
 
@@ -47,9 +49,10 @@ These functions call the existing in-memory catalog service and map outcomes int
 
 ## Current Limitations
 
-- No HTTP server implementation yet
-- No framework route decorators
 - No persistence or external provider integration
+- No CarbonOps-Parser runtime integration
+- No CarbonOps-Web runtime integration
+- Local FastAPI routing is adapter-only
 - Not production-ready
 
 ## HTTP parity

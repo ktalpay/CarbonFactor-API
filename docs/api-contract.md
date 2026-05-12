@@ -1,13 +1,15 @@
-# CarbonFactor API Contract (Pre-Alpha)
+# CarbonOps-API Contract (Pre-Alpha)
 
 ## Current Status
 
 - Status: **pre-alpha**
 - HTTP server: **thin FastAPI adapter for local testing only**
-- Contract style: deterministic in-memory Python models and service behavior
+- Contract style: deterministic in-memory models and service behavior
 - Transport boundary: deterministic local envelope + status mapping layer (no framework)
 
 ## DTO Models
+
+CarbonFactor remains the domain concept for a carbon factor record.
 
 `FactorDto` fields:
 - `id`
@@ -61,10 +63,12 @@ These are local functions only and are intended to be adapted into a future HTTP
 
 ## Limitations
 
-- No HTTP transport server.
+- No production HTTP transport server.
 - No persistence/database.
 - Uses only synthetic sample data.
 - Not production-ready and not a complete emissions data standard implementation.
+- No CarbonOps-Parser runtime integration.
+- No CarbonOps-Web runtime integration.
 
 ## HTTP adapter mapping (local)
 

@@ -5,6 +5,7 @@
 - Technical evidence index (`docs/evidence/index.md`).
 - API architecture evidence summary (`docs/evidence/api-architecture-evidence.md`).
 - Repository navigation alignment across core docs.
+- CarbonOps-API documentation baseline and identity alignment.
 
 ## Remaining backlog
 
