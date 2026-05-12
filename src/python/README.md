@@ -8,6 +8,25 @@ This directory contains the current Python implementation of CarbonOps-API.
 - `src/carbonops_api`: package source
 - `tests`: Python test suite
 
+## Transitional Package Layout
+
+The package now includes a first clean-architecture-oriented slice:
+
+- `carbonops_api/domain`: domain-facing factor entity concepts
+- `carbonops_api/application`: application use cases for factor lookup
+- `carbonops_api/contracts`: public DTOs, query models, response models, and
+  error helpers
+- `carbonops_api/infrastructure`: synthetic in-memory sample data
+- `carbonops_api/api`: API boundary wrapper for the current HTTP adapter
+- `carbonops_api/http`: current FastAPI adapter kept for compatibility
+- `carbonops_api/transport`: framework-neutral transport behavior
+
+Compatibility facades remain at the top level for:
+
+- `carbonops_api.catalog`
+- `carbonops_api.errors`
+- `carbonops_api.sample_data`
+
 ## Current Scope
 
 The Python implementation preserves the current local API contract foundation:
@@ -23,6 +42,7 @@ It includes:
 - catalog lookup behavior
 - transport envelopes and status mapping
 - a thin FastAPI adapter for local testing
+- transitional clean architecture packages with compatibility imports
 
 ## Local Validation
 

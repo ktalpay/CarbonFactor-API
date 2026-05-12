@@ -34,7 +34,8 @@ Future Python work should:
 - provide parity evidence against the documented contract
 
 This phase reorganizes the existing Python implementation into `src/python`
-without changing runtime behavior.
+without changing runtime behavior, and introduces a first clean-architecture
+package slice under `src/python/src/carbonops_api`.
 
 ## Shared Documentation Contract
 

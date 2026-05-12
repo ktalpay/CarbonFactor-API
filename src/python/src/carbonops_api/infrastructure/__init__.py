@@ -1,4 +1,4 @@
-"""Compatibility facade for synthetic sample data."""
+"""Infrastructure helpers for CarbonOps API."""
 
 from carbonops_api.infrastructure.sample_data import SAMPLE_FACTORS
 

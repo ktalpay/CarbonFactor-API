@@ -21,6 +21,19 @@ The current Python implementation is organized under:
 - `src/python/src/carbonops_api`
 - `src/python/tests`
 
+Within the Python package, the current transitional architecture is:
+
+- `domain`: factor entity concepts
+- `application`: list/get/search use cases
+- `contracts`: public DTOs and response/query models
+- `infrastructure`: synthetic in-memory factor data
+- `api`: API boundary wrapper
+- `http`: current FastAPI adapter
+- `transport`: framework-neutral transport behavior
+
+Compatibility modules remain at the top level for `catalog`, `errors`, and
+`sample_data`.
+
 The planned .NET implementation root exists at `src/dotnet`.
 
 ## Platform Relationship
@@ -49,7 +62,7 @@ HTTP request
   -> query validation
   -> transport handler
   -> application/domain behavior
-  -> CarbonFactor record lookup
+  -> infrastructure-backed factor lookup
   -> response envelope
 ```
 

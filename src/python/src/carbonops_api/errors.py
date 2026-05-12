@@ -1,23 +1,5 @@
-"""Deterministic error helpers for contract behavior."""
+"""Compatibility facade for deterministic error helpers."""
 
-from carbonops_api.contracts import ApiError
+from carbonops_api.contracts.errors import invalid_query_error, not_found_error, unsupported_filter_error
 
-
-def not_found_error(entity: str, identifier: str) -> ApiError:
-    return ApiError(
-        code="not_found",
-        message=f"{entity} not found",
-        details={"id": identifier},
-    )
-
-
-def invalid_query_error(reason: str) -> ApiError:
-    return ApiError(code="invalid_query", message="Invalid query", details={"reason": reason})
-
-
-def unsupported_filter_error(filter_name: str) -> ApiError:
-    return ApiError(
-        code="unsupported_filter",
-        message="Unsupported filter",
-        details={"filter": filter_name},
-    )
+__all__ = ["invalid_query_error", "not_found_error", "unsupported_filter_error"]
