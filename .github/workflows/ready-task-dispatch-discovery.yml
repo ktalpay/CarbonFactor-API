@@ -76,7 +76,7 @@ jobs:
                   title,
                   url,
                   task_id: $task_id,
-                  task_ref: (if $task_id == "" then title else $task_id end),
+                  task_ref: (if $task_id == "" then .title else $task_id end),
                   task_id_missing: ($task_id == ""),
                   lane: (if $lane == "" then "unspecified" else $lane end),
                   agent: ($agent | display),
