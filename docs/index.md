@@ -3,7 +3,7 @@
 ## Baseline
 
 - [Python Implementation Root](../src/python/README.md)
-- [Planned .NET Root](../src/dotnet/README.md)
+- [.NET Implementation Root](../src/dotnet/README.md)
 - [Architecture](architecture.md)
 - [Clean Architecture](clean-architecture.md)
 - [Clean Code Guidelines](clean-code-guidelines.md)

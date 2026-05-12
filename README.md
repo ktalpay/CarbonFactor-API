@@ -19,7 +19,8 @@ CarbonOps-API is in documentation-baseline status with independent Python and
 - Existing endpoint documentation is preserved.
 - The current local adapter remains pre-alpha and synthetic-data-only.
 - The active Python implementation now lives under `src/python`.
-- The planned .NET implementation root now exists as `src/dotnet`.
+- The initial .NET Clean Architecture solution skeleton now exists under
+  `src/dotnet`.
 - No authentication, database persistence, audit logging, rate limiting, parser
   execution, or production deployment behavior is included.
 
@@ -58,17 +59,19 @@ adapter for local tests, and behavior tests.
 - `src/python`: current Python implementation root
 - `src/python/src/carbonops_api`: Python package source
 - `src/python/tests`: Python test suite
-- `src/dotnet`: planned .NET implementation root
+- `src/dotnet`: .NET 8 Clean Architecture solution skeleton
 
 ## Implementation Options
 
 ### .NET
 
 .NET is the intended primary implementation direction for the platform API. The
-future .NET path should move toward clean architecture with separated API,
-application, domain, and infrastructure concerns.
+.NET path now has an initial Clean Architecture solution skeleton with separated
+API, application, domain, contracts, infrastructure, and test projects.
 
-This phase does not add .NET runtime behavior.
+This phase does not add carbon factor CRUD behavior, persistence, authentication,
+or production runtime features. The .NET API project includes only minimal host
+startup needed for the skeleton to build and test.
 
 ### Python
 
@@ -123,7 +126,7 @@ runtime coupling are out of scope for this phase.
 
 - [Documentation Index](docs/index.md)
 - [Python Implementation Root](src/python/README.md)
-- [Planned .NET Root](src/dotnet/README.md)
+- [.NET Implementation Root](src/dotnet/README.md)
 - [Architecture](docs/architecture.md)
 - [Clean Architecture](docs/clean-architecture.md)
 - [Clean Code Guidelines](docs/clean-code-guidelines.md)
@@ -146,7 +149,8 @@ runtime coupling are out of scope for this phase.
 - Define clean-architecture target boundaries before moving implementation
   files.
 - Establish independent Python and .NET implementation roots.
-- Introduce a .NET-first implementation path in a later task.
+- Expand the .NET skeleton into the .NET-first implementation path in later
+  tasks.
 - Define safe integration points with CarbonOps-Parser and CarbonOps-Web.
 - Defer production hardening until explicit production-readiness tasks.
 

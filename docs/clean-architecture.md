@@ -1,7 +1,7 @@
 # Clean Architecture
 
 CarbonOps-API is intended to evolve toward clean architecture with a .NET-first
-implementation path and a future independent Python path.
+implementation path and an independent Python path.
 
 ## Target Layering
 
@@ -11,6 +11,22 @@ API
   -> Domain
   -> Infrastructure
 ```
+
+## Current .NET Skeleton
+
+The .NET implementation root at `src/dotnet` now contains a .NET 8 solution
+skeleton:
+
+- `CarbonOps.Domain`: domain-only project
+- `CarbonOps.Application`: use-case project
+- `CarbonOps.Contracts`: public contract project
+- `CarbonOps.Infrastructure`: adapter project
+- `CarbonOps.Api`: ASP.NET Core composition root
+- `tests/*`: smoke and lightweight dependency-boundary tests
+
+The skeleton does not implement carbon factor CRUD behavior yet. It exists to
+establish project boundaries and validation before business behavior is ported
+or added.
 
 ## Current Python Slice
 
@@ -40,8 +56,9 @@ The API layer owns transport-specific behavior:
 - authentication and authorization when later added
 - API versioning when later added
 
-The current FastAPI adapter is local-only and preserved for existing tests. A
-future .NET API layer should provide the primary platform implementation.
+The current FastAPI adapter is local-only and preserved for existing tests. The
+current .NET API project includes only minimal host startup and a health
+endpoint for build and smoke-test purposes.
 
 ## Application Layer
 
@@ -87,6 +104,6 @@ behavior.
 
 ## Implementation Path Rule
 
-When .NET and Python paths are added, they should be independent
-implementations of the same conceptual API and domain model. They should not
-import from each other or require each other at runtime.
+The .NET and Python paths are independent implementations of the same
+conceptual API and domain model. They should not import from each other or
+require each other at runtime.

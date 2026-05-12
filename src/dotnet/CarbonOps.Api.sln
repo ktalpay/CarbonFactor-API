@@ -1,0 +1,92 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{4DFE7959-D4BF-422F-B16E-1C1DA8B617D2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarbonOps.Domain", "src\CarbonOps.Domain\CarbonOps.Domain.csproj", "{ACD943B4-C867-4B03-9465-984676B67CED}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarbonOps.Contracts", "src\CarbonOps.Contracts\CarbonOps.Contracts.csproj", "{C15A8DB2-696D-401D-B49F-BA29BA207EEF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarbonOps.Application", "src\CarbonOps.Application\CarbonOps.Application.csproj", "{F51A8E23-CA29-4230-B662-0DEA9EB38E98}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarbonOps.Infrastructure", "src\CarbonOps.Infrastructure\CarbonOps.Infrastructure.csproj", "{A0154E82-BF48-409D-A9B3-5174EDFAD1C3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarbonOps.Api", "src\CarbonOps.Api\CarbonOps.Api.csproj", "{22510D9F-8A9C-415F-A363-0CCC50D40207}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{757A8C1E-1990-4410-BB7E-9525350D0228}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarbonOps.Domain.Tests", "tests\CarbonOps.Domain.Tests\CarbonOps.Domain.Tests.csproj", "{6DC238AB-805D-4073-91D7-9EC800DDED6B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarbonOps.Contracts.Tests", "tests\CarbonOps.Contracts.Tests\CarbonOps.Contracts.Tests.csproj", "{54A7CE2B-D6A7-4693-9DDC-E6364DC3F0A6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarbonOps.Application.Tests", "tests\CarbonOps.Application.Tests\CarbonOps.Application.Tests.csproj", "{109AF42D-3303-48AE-9432-FE7F8C09E2A6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarbonOps.Infrastructure.Tests", "tests\CarbonOps.Infrastructure.Tests\CarbonOps.Infrastructure.Tests.csproj", "{7EFFBC5F-9855-4D9C-911E-114A44594C6E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CarbonOps.Api.Tests", "tests\CarbonOps.Api.Tests\CarbonOps.Api.Tests.csproj", "{84905EB7-5BB0-4683-94CB-19AF58E70D62}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{ACD943B4-C867-4B03-9465-984676B67CED}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ACD943B4-C867-4B03-9465-984676B67CED}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ACD943B4-C867-4B03-9465-984676B67CED}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ACD943B4-C867-4B03-9465-984676B67CED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C15A8DB2-696D-401D-B49F-BA29BA207EEF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C15A8DB2-696D-401D-B49F-BA29BA207EEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C15A8DB2-696D-401D-B49F-BA29BA207EEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C15A8DB2-696D-401D-B49F-BA29BA207EEF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F51A8E23-CA29-4230-B662-0DEA9EB38E98}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F51A8E23-CA29-4230-B662-0DEA9EB38E98}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F51A8E23-CA29-4230-B662-0DEA9EB38E98}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F51A8E23-CA29-4230-B662-0DEA9EB38E98}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A0154E82-BF48-409D-A9B3-5174EDFAD1C3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A0154E82-BF48-409D-A9B3-5174EDFAD1C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A0154E82-BF48-409D-A9B3-5174EDFAD1C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A0154E82-BF48-409D-A9B3-5174EDFAD1C3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{22510D9F-8A9C-415F-A363-0CCC50D40207}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{22510D9F-8A9C-415F-A363-0CCC50D40207}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{22510D9F-8A9C-415F-A363-0CCC50D40207}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{22510D9F-8A9C-415F-A363-0CCC50D40207}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6DC238AB-805D-4073-91D7-9EC800DDED6B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6DC238AB-805D-4073-91D7-9EC800DDED6B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6DC238AB-805D-4073-91D7-9EC800DDED6B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6DC238AB-805D-4073-91D7-9EC800DDED6B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{54A7CE2B-D6A7-4693-9DDC-E6364DC3F0A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{54A7CE2B-D6A7-4693-9DDC-E6364DC3F0A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{54A7CE2B-D6A7-4693-9DDC-E6364DC3F0A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{54A7CE2B-D6A7-4693-9DDC-E6364DC3F0A6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{109AF42D-3303-48AE-9432-FE7F8C09E2A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{109AF42D-3303-48AE-9432-FE7F8C09E2A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{109AF42D-3303-48AE-9432-FE7F8C09E2A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{109AF42D-3303-48AE-9432-FE7F8C09E2A6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7EFFBC5F-9855-4D9C-911E-114A44594C6E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7EFFBC5F-9855-4D9C-911E-114A44594C6E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7EFFBC5F-9855-4D9C-911E-114A44594C6E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7EFFBC5F-9855-4D9C-911E-114A44594C6E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{84905EB7-5BB0-4683-94CB-19AF58E70D62}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{84905EB7-5BB0-4683-94CB-19AF58E70D62}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{84905EB7-5BB0-4683-94CB-19AF58E70D62}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{84905EB7-5BB0-4683-94CB-19AF58E70D62}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{ACD943B4-C867-4B03-9465-984676B67CED} = {4DFE7959-D4BF-422F-B16E-1C1DA8B617D2}
+		{C15A8DB2-696D-401D-B49F-BA29BA207EEF} = {4DFE7959-D4BF-422F-B16E-1C1DA8B617D2}
+		{F51A8E23-CA29-4230-B662-0DEA9EB38E98} = {4DFE7959-D4BF-422F-B16E-1C1DA8B617D2}
+		{A0154E82-BF48-409D-A9B3-5174EDFAD1C3} = {4DFE7959-D4BF-422F-B16E-1C1DA8B617D2}
+		{22510D9F-8A9C-415F-A363-0CCC50D40207} = {4DFE7959-D4BF-422F-B16E-1C1DA8B617D2}
+		{6DC238AB-805D-4073-91D7-9EC800DDED6B} = {757A8C1E-1990-4410-BB7E-9525350D0228}
+		{54A7CE2B-D6A7-4693-9DDC-E6364DC3F0A6} = {757A8C1E-1990-4410-BB7E-9525350D0228}
+		{109AF42D-3303-48AE-9432-FE7F8C09E2A6} = {757A8C1E-1990-4410-BB7E-9525350D0228}
+		{7EFFBC5F-9855-4D9C-911E-114A44594C6E} = {757A8C1E-1990-4410-BB7E-9525350D0228}
+		{84905EB7-5BB0-4683-94CB-19AF58E70D62} = {757A8C1E-1990-4410-BB7E-9525350D0228}
+	EndGlobalSection
+EndGlobal
