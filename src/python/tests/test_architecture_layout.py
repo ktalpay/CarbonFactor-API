@@ -60,6 +60,17 @@ def test_application_modules_do_not_import_http_frameworks() -> None:
         assert all(not module.startswith(forbidden_prefixes) for module in imported)
 
 
+def test_catalog_and_transport_use_composition_not_infrastructure() -> None:
+    module_paths = [
+        _module_root() / "catalog.py",
+        _module_root() / "transport" / "handlers.py",
+    ]
+    for path in module_paths:
+        imported = _imported_modules(path)
+        assert "carbonops_api.composition" in imported
+        assert all(not module.startswith("carbonops_api.infrastructure") for module in imported)
+
+
 def test_compatibility_imports_still_resolve() -> None:
     contracts_module = import_module("carbonops_api.contracts")
     catalog_module = import_module("carbonops_api.catalog")

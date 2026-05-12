@@ -22,6 +22,7 @@ The current Python implementation now exposes a first structural slice under
 - `contracts/`: DTOs, query models, response models, and error helpers
 - `domain/`: CarbonFactor entity concepts
 - `infrastructure/`: synthetic in-memory factor data
+- `composition.py`: default application wiring for the in-memory implementation
 - `http/`: existing FastAPI adapter preserved for compatibility
 - `transport/`: framework-neutral transport envelopes and handlers
 
@@ -80,8 +81,9 @@ without rewriting domain behavior:
 None of these infrastructure features are added in this phase.
 
 The current Python slice includes an in-memory repository adapter backed by
-synthetic sample data. Transport and compatibility wiring use that adapter to
-preserve current behavior.
+synthetic sample data. Composition owns the default repository wiring, and
+transport plus compatibility facades use composition to preserve current
+behavior.
 
 ## Implementation Path Rule
 
