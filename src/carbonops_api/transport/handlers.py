@@ -1,13 +1,13 @@
 """Local transport handlers that emulate route behavior without a server."""
 
-from carbonfactor_api.catalog import get_factor_by_id, search_factors
-from carbonfactor_api.contracts import ApiError, FactorDetailResponse, FactorListResponse, FactorQuery
-from carbonfactor_api.transport.envelope import ErrorEnvelope, ResponseEnvelope
-from carbonfactor_api.transport.serialization import (
+from carbonops_api.catalog import get_factor_by_id, search_factors
+from carbonops_api.contracts import ApiError, FactorDetailResponse, FactorListResponse, FactorQuery
+from carbonops_api.transport.envelope import ErrorEnvelope, ResponseEnvelope
+from carbonops_api.transport.serialization import (
     serialize_detail_response,
     serialize_list_response,
 )
-from carbonfactor_api.transport.status import HTTP_OK, error_status_for_code
+from carbonops_api.transport.status import HTTP_OK, error_status_for_code
 
 
 _ALLOWED_FILTERS = {"category", "activity", "region", "year"}

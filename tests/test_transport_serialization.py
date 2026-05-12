@@ -1,5 +1,5 @@
-from carbonfactor_api.contracts import ApiError, FactorDetailResponse, FactorDto, FactorListResponse
-from carbonfactor_api.transport.serialization import (
+from carbonops_api.contracts import ApiError, FactorDetailResponse, FactorDto, FactorListResponse
+from carbonops_api.transport.serialization import (
     serialize_detail_response,
     serialize_error,
     serialize_factor,

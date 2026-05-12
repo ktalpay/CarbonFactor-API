@@ -2,7 +2,7 @@
 
 from dataclasses import asdict
 
-from carbonfactor_api.contracts import ApiError, FactorDetailResponse, FactorDto, FactorListResponse
+from carbonops_api.contracts import ApiError, FactorDetailResponse, FactorDto, FactorListResponse
 
 
 def serialize_factor(factor: FactorDto) -> dict:

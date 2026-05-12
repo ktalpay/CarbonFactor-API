@@ -1,6 +1,6 @@
 """Deterministic error helpers for contract behavior."""
 
-from carbonfactor_api.contracts import ApiError
+from carbonops_api.contracts import ApiError
 
 
 def not_found_error(entity: str, identifier: str) -> ApiError:

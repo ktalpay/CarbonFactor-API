@@ -1,6 +1,6 @@
 from fastapi import Request
 
-from carbonfactor_api.http.query import build_factor_query, unsupported_query_keys
+from carbonops_api.http.query import build_factor_query, unsupported_query_keys
 
 
 def _request_from_query_string(query_string: str) -> Request:

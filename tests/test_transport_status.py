@@ -1,4 +1,4 @@
-from carbonfactor_api.transport.status import HTTP_BAD_REQUEST, HTTP_NOT_FOUND, error_status_for_code
+from carbonops_api.transport.status import HTTP_BAD_REQUEST, HTTP_NOT_FOUND, error_status_for_code
 
 
 def test_status_mapping_for_not_found() -> None:

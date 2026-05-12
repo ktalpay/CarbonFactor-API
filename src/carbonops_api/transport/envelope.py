@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from carbonfactor_api.contracts import ApiError
+from carbonops_api.contracts import ApiError
 
 
 @dataclass(frozen=True)

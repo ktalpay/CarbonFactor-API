@@ -1,5 +1,5 @@
-from carbonfactor_api.contracts import ApiError
-from carbonfactor_api.transport.envelope import ErrorEnvelope, ResponseEnvelope
+from carbonops_api.contracts import ApiError
+from carbonops_api.transport.envelope import ErrorEnvelope, ResponseEnvelope
 
 
 def test_success_envelope_serialization() -> None:

@@ -2,7 +2,7 @@
 
 from fastapi import FastAPI
 
-from carbonfactor_api.http.routes import register_routes
+from carbonops_api.http.routes import register_routes
 
 
 def create_app() -> FastAPI:

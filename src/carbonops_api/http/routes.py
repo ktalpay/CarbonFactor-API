@@ -2,8 +2,8 @@
 
 from fastapi import Request, Response
 
-from carbonfactor_api.http.query import build_factor_query, unsupported_query_envelope, unsupported_query_keys
-from carbonfactor_api.transport.handlers import handle_get_factor, handle_list_factors
+from carbonops_api.http.query import build_factor_query, unsupported_query_envelope, unsupported_query_keys
+from carbonops_api.transport.handlers import handle_get_factor, handle_list_factors
 
 
 def register_routes(app) -> None:

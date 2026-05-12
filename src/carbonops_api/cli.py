@@ -1,10 +1,10 @@
-"""CLI helpers for CarbonFactor API."""
+"""CLI helpers for CarbonOps API."""
 
 
 def status_text() -> str:
     """Return deterministic project status text."""
     return (
-        "Project: carbonfactor-api\n"
+        "Project: carbonops-api\n"
         "Status: pre-alpha\n"
         "Scope: in-memory contract foundation for carbon factor lookup"
     )

@@ -1,5 +1,5 @@
-from carbonfactor_api import __version__
-from carbonfactor_api.cli import status_text
+from carbonops_api import __version__
+from carbonops_api.cli import status_text
 
 
 def test_package_import() -> None:
@@ -8,5 +8,6 @@ def test_package_import() -> None:
 
 def test_status_output_is_conservative() -> None:
     output = status_text().lower()
+    assert "carbonops-api" in output
     assert "pre-alpha" in output
     assert "contract foundation" in output

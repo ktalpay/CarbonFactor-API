@@ -1,4 +1,4 @@
-"""Data contracts for CarbonFactor API foundation."""
+"""Data contracts for CarbonOps API foundation."""
 
 from dataclasses import asdict, dataclass, field
 
@@ -28,7 +28,7 @@ class FactorQuery:
 class ApiError:
     code: str
     message: str
-    details: dict[str, str] = field(default_factory=dict)
+    details: dict[str, object] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)

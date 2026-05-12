@@ -1,6 +1,6 @@
 from fastapi.testclient import TestClient
 
-from carbonfactor_api.http.app import create_app
+from carbonops_api.http.app import create_app
 
 
 def test_route_status_matches_envelope_status() -> None:

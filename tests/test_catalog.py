@@ -1,5 +1,5 @@
-from carbonfactor_api.catalog import get_factor_by_id, list_factors, search_factors
-from carbonfactor_api.contracts import ApiError, FactorQuery
+from carbonops_api.catalog import get_factor_by_id, list_factors, search_factors
+from carbonops_api.contracts import ApiError, FactorQuery
 
 
 def test_list_all_factors() -> None:

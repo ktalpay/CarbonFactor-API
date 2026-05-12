@@ -1,7 +1,7 @@
 from fastapi.testclient import TestClient
 
-from carbonfactor_api.http.app import create_app
-from carbonfactor_api.transport.handlers import handle_get_factor, handle_list_factors
+from carbonops_api.http.app import create_app
+from carbonops_api.transport.handlers import handle_get_factor, handle_list_factors
 
 
 def test_get_factors_success() -> None:

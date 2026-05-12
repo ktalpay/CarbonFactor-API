@@ -1,4 +1,4 @@
-"""Pytest configuration for CarbonFactor API tests."""
+"""Pytest configuration for CarbonOps API tests."""
 
 from pathlib import Path
 import sys

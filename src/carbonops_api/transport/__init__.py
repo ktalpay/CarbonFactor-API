@@ -1,7 +1,7 @@
-"""Transport boundary helpers for CarbonFactor API."""
+"""Transport boundary helpers for CarbonOps API."""
 
-from carbonfactor_api.transport.envelope import ErrorEnvelope, ResponseEnvelope
-from carbonfactor_api.transport.status import (
+from carbonops_api.transport.envelope import ErrorEnvelope, ResponseEnvelope
+from carbonops_api.transport.status import (
     HTTP_BAD_REQUEST,
     HTTP_NOT_FOUND,
     HTTP_OK,

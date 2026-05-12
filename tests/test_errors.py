@@ -1,4 +1,4 @@
-from carbonfactor_api.errors import invalid_query_error, not_found_error, unsupported_filter_error
+from carbonops_api.errors import invalid_query_error, not_found_error, unsupported_filter_error
 
 
 def test_not_found_error() -> None:

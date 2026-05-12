@@ -1,4 +1,4 @@
-from carbonfactor_api.transport.handlers import handle_get_factor, handle_list_factors
+from carbonops_api.transport.handlers import handle_get_factor, handle_list_factors
 
 
 def test_list_handler_success() -> None:

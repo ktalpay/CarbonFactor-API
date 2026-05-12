@@ -1,4 +1,4 @@
-from carbonfactor_api.contracts import FactorDetailResponse, FactorDto, FactorListResponse, FactorQuery
+from carbonops_api.contracts import FactorDetailResponse, FactorDto, FactorListResponse, FactorQuery
 
 
 def test_dto_creation() -> None:

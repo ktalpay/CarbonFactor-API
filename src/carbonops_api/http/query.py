@@ -1,10 +1,12 @@
 """HTTP query parsing helpers for factor routes."""
 
+from dataclasses import replace
+
 from fastapi import Request
 
-from carbonfactor_api.errors import invalid_query_error
-from carbonfactor_api.transport.envelope import ErrorEnvelope, ResponseEnvelope
-from carbonfactor_api.transport.status import error_status_for_code
+from carbonops_api.errors import invalid_query_error
+from carbonops_api.transport.envelope import ErrorEnvelope, ResponseEnvelope
+from carbonops_api.transport.status import error_status_for_code
 
 _SUPPORTED_QUERY_KEYS = {"category", "activity", "region", "year"}
 
@@ -34,5 +36,5 @@ def unsupported_query_keys(request: Request) -> list[str]:
 
 def unsupported_query_envelope(unsupported_keys: list[str]) -> ResponseEnvelope:
     error = invalid_query_error("unsupported query keys")
-    error.details = {"unsupported_query_keys": sorted(unsupported_keys)}
+    error = replace(error, details={"unsupported_query_keys": sorted(unsupported_keys)})
     return ResponseEnvelope(status=error_status_for_code(error.code), error=ErrorEnvelope.from_api_error(error))

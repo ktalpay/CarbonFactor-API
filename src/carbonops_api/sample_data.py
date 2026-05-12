@@ -1,6 +1,6 @@
 """Synthetic, deterministic factor sample data."""
 
-from carbonfactor_api.contracts import FactorDto
+from carbonops_api.contracts import FactorDto
 
 
 SAMPLE_FACTORS: tuple[FactorDto, ...] = (
