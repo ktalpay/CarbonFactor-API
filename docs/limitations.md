@@ -31,4 +31,5 @@ CarbonOps-API does not:
 
 The documentation describes the intended direction for .NET-first clean
 architecture. The repository now includes a current Python implementation root
-and a planned .NET root, but it does not claim a finished .NET implementation.
+and an initial .NET solution skeleton, but it does not claim a finished .NET
+implementation.

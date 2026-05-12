@@ -1,7 +1,7 @@
 # Parity Model
 
-The future .NET and Python implementation paths should behave consistently at
-the public API and domain contract level while remaining independent codebases.
+The .NET and Python implementation paths should behave consistently at the
+public API and domain contract level while remaining independent codebases.
 
 ## Parity Goals
 
@@ -37,6 +37,7 @@ Future parity evidence should include:
 
 ## Current Status
 
-The repository now includes `src/python` as the current implementation root and
-`src/dotnet` as the planned .NET root. It still does not add a .NET
-implementation or cross-language test infrastructure.
+The repository now includes `src/python` as the current Python implementation
+root and `src/dotnet` as the initial .NET Clean Architecture solution skeleton.
+It still does not add .NET carbon factor behavior or cross-language test
+infrastructure.

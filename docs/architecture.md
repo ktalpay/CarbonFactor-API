@@ -35,7 +35,9 @@ Within the Python package, the current transitional architecture is:
 Compatibility modules remain at the top level for `catalog`, `errors`, and
 `sample_data`.
 
-The planned .NET implementation root exists at `src/dotnet`.
+The .NET implementation root at `src/dotnet` now contains an initial .NET 8
+Clean Architecture solution skeleton with API, application, domain, contracts,
+infrastructure, and matching test projects.
 
 ## Platform Relationship
 
@@ -70,9 +72,9 @@ HTTP request
 ```
 
 The current implementation expresses this flow with local Python modules and
-synthetic data. The target architecture should later express the same concerns
-through a .NET-first clean-architecture implementation, with an independent
-Python implementation option.
+synthetic data. The .NET skeleton establishes the project boundaries that should
+later express the same concerns through a .NET-first implementation, with the
+Python implementation remaining independent.
 
 ## Target Boundaries
 

@@ -11,10 +11,9 @@ while preserving existing CarbonOps-API behavior and repository identity.
    stable.
 2. Expand documentation around API boundaries, domain model, limitations, and
    production readiness.
-3. Define clean-architecture boundaries after establishing implementation
-   roots.
-4. Prepare a future .NET-first implementation path without changing runtime
-   behavior in this task.
+3. Keep clean-architecture boundaries explicit as implementation work expands.
+4. Expand the .NET-first implementation path without changing existing runtime
+   behavior unless explicitly scoped.
 5. Keep the Python implementation under `src/python` while preserving current
    behavior.
 
@@ -28,7 +27,8 @@ while preserving existing CarbonOps-API behavior and repository identity.
 
 ## Later Phases
 
-- Add the .NET API implementation structure.
+- Add .NET carbon factor use cases and API behavior behind the established
+  project boundaries.
 - Add persistence behind a documented infrastructure boundary.
 - Add authentication and authorization.
 - Add audit logging and operational observability.
