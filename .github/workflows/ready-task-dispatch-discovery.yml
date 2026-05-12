@@ -23,6 +23,7 @@ name: "Ready Task Dispatch Discovery"
 permissions:
   issues: read
   contents: read
+  actions: write
 
 jobs:
   discover-ready-tasks:
@@ -80,6 +81,7 @@ jobs:
 
           READY_COUNT="$(printf '%s\n' "$READY_TASKS_JSON" | jq 'length')"
           MALFORMED_COUNT="$(printf '%s\n' "$READY_TASKS_JSON" | jq '[.[] | select(.task_id_missing)] | length')"
+          WELL_FORMED_COUNT="$(printf '%s\n' "$READY_TASKS_JSON" | jq '[.[] | select(.task_id_missing | not)] | length')"
 
           {
             echo "### Ready Task Dispatch Discovery"
@@ -87,6 +89,7 @@ jobs:
             echo "- Repository: \`$REPOSITORY\`"
             echo "- Ready label: \`status:ready\`"
             echo "- Ready task count: \`$READY_COUNT\`"
+            echo "- Well-formed ready task count: \`$WELL_FORMED_COUNT\`"
             echo "- Malformed ready task count: \`$MALFORMED_COUNT\`"
             echo "- Claim requested: \`$CLAIM_MODE\`"
             echo "- Codex Cloud auto-start requested: \`$START_CODEX_CLOUD\`"
@@ -107,10 +110,12 @@ jobs:
 
             echo "ready_count=0" >> "$GITHUB_OUTPUT"
             echo "malformed_count=0" >> "$GITHUB_OUTPUT"
+            echo "prompt_handoff_trigger_count=0" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
           mapfile -t LANES < <(printf '%s\n' "$READY_TASKS_JSON" | jq -r '.[].lane' | sort -f -u)
+          mapfile -t PROMPT_HANDOFF_ISSUE_NUMBERS < <(printf '%s\n' "$READY_TASKS_JSON" | jq -r '.[] | select(.task_id_missing | not) | .number')
 
           {
             echo "#### Ready tasks by lane"
@@ -145,8 +150,40 @@ jobs:
             } >> "$GITHUB_STEP_SUMMARY"
           fi
 
+          TRIGGERED_ISSUES=()
+
+          for PROMPT_ISSUE_NUMBER in "${PROMPT_HANDOFF_ISSUE_NUMBERS[@]}"; do
+            echo "Triggering Task Prompt Handoff Generator for issue #$PROMPT_ISSUE_NUMBER."
+
+            gh workflow run task-prompt-handoff-generator.yml \
+              --repo "$REPOSITORY" \
+              --ref develop \
+              -f issue_number="$PROMPT_ISSUE_NUMBER"
+
+            TRIGGERED_ISSUES+=("#$PROMPT_ISSUE_NUMBER")
+          done
+
+          PROMPT_HANDOFF_TRIGGER_COUNT="${#TRIGGERED_ISSUES[@]}"
+
           {
-            echo "#### Discovery-only guardrails"
+            echo "#### Prompt handoff generation"
+            echo
+            echo "- Prompt handoff workflows triggered: \`$PROMPT_HANDOFF_TRIGGER_COUNT\`"
+            echo "- Malformed ready issues skipped: \`$MALFORMED_COUNT\`"
+
+            if [ "$PROMPT_HANDOFF_TRIGGER_COUNT" = "0" ]; then
+              echo "- Issue numbers triggered: \`none\`"
+            else
+              TRIGGERED_LIST="$(printf '%s, ' "${TRIGGERED_ISSUES[@]}")"
+              TRIGGERED_LIST="${TRIGGERED_LIST%, }"
+              echo "- Issue numbers triggered: $TRIGGERED_LIST"
+            fi
+
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          {
+            echo "#### Discovery and prompt handoff guardrails"
             echo
             echo "- No labels were changed."
             echo "- No issues were assigned or commented on."
@@ -156,3 +193,4 @@ jobs:
 
           echo "ready_count=$READY_COUNT" >> "$GITHUB_OUTPUT"
           echo "malformed_count=$MALFORMED_COUNT" >> "$GITHUB_OUTPUT"
+          echo "prompt_handoff_trigger_count=$PROMPT_HANDOFF_TRIGGER_COUNT" >> "$GITHUB_OUTPUT"
