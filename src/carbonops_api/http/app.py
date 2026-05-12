@@ -6,7 +6,7 @@ from carbonops_api.http.routes import register_routes
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="CarbonFactor API", version="0.1.0")
+    app = FastAPI(title="CarbonOps API", version="0.1.0")
 
     @app.get("/health")
     def health() -> dict[str, str]:

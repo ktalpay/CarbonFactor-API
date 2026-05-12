@@ -5,7 +5,7 @@ from carbonops_api.http.app import create_app
 
 def test_create_app_returns_fastapi_instance() -> None:
     app = create_app()
-    assert app.title == "CarbonFactor API"
+    assert app.title == "CarbonOps API"
 
 
 def test_health_route_status_code() -> None:

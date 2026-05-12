@@ -35,7 +35,9 @@ the final production API hosting model.
 
 ## OpenAPI checks
 
-Tests validate deterministic title/version and route/query-parameter visibility in generated OpenAPI, without committing generated spec artifacts.
+Tests validate deterministic `CarbonOps API` title metadata, version, and
+route/query-parameter visibility in generated OpenAPI, without committing
+generated spec artifacts.
 
 
 See also evidence docs: `docs/evidence/index.md`, `docs/evidence/api-architecture-evidence.md`.

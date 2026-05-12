@@ -6,7 +6,7 @@ from carbonops_api.http.app import create_app
 def test_openapi_metadata_is_deterministic() -> None:
     client = TestClient(create_app())
     spec = client.get('/openapi.json').json()
-    assert spec['info']['title'] == 'CarbonFactor API'
+    assert spec['info']['title'] == 'CarbonOps API'
     assert spec['info']['version'] == '0.1.0'
 
 

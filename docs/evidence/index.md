@@ -48,7 +48,7 @@ synthetic data.
 
 ## OpenAPI inspection tests
 - **Implemented artifacts:** `tests/test_http_openapi.py`.
-- **Why this matters:** verifies deterministic metadata and route/query visibility for the generated local schema.
+- **Why this matters:** verifies deterministic CarbonOps API metadata and route/query visibility for the generated local schema.
 - **Evidence relevance (conservative):** supports local reviewer confidence in documented HTTP surface.
 - **Current limitation:** no published or versioned OpenAPI artifact in-repo.
 - **Next improvement candidate:** document lightweight process for pinned OpenAPI snapshots when contract stabilizes.
