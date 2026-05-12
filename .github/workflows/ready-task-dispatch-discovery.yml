@@ -1,0 +1,158 @@
+name: "Ready Task Dispatch Discovery"
+
+"on":
+  workflow_dispatch:
+    inputs:
+      claim:
+        description: "Whether this run is intended to claim tasks later"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+      start_codex_cloud:
+        description: "Whether Codex Cloud auto-start should be attempted in later workflow versions"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+permissions:
+  issues: read
+  contents: read
+
+jobs:
+  discover-ready-tasks:
+    name: "Discover ready task issues"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "Report ready tasks"
+        id: ready_tasks
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          CLAIM_MODE: ${{ inputs.claim }}
+          START_CODEX_CLOUD: ${{ inputs.start_codex_cloud }}
+        run: |
+          set -euo pipefail
+
+          READY_ISSUES_JSON="$(gh issue list \
+            --repo "$REPOSITORY" \
+            --search 'label:"status:ready" state:open' \
+            --limit 200 \
+            --json number,title,body,url)"
+
+          READY_TASKS_JSON="$(printf '%s\n' "$READY_ISSUES_JSON" | jq '
+            def field($name):
+              [(.body // "" | split("\n")[] | (try capture("^\\s*" + $name + "\\s*:\\s*(?<value>.*)\\s*$"; "i").value catch empty))]
+              | first
+              | . // "";
+
+            def display:
+              if . == "" then "none" else . end;
+
+            [
+              .[]
+              | (field("Task ID")) as $task_id
+              | (field("Lane")) as $lane
+              | (field("Agent")) as $agent
+              | (field("Depends on")) as $depends_on
+              | (field("Unblocks")) as $unblocks
+              | {
+                  number,
+                  title,
+                  url,
+                  task_id: $task_id,
+                  task_ref: (if $task_id == "" then title else $task_id end),
+                  task_id_missing: ($task_id == ""),
+                  lane: (if $lane == "" then "unspecified" else $lane end),
+                  agent: ($agent | display),
+                  depends_on: ($depends_on | display),
+                  unblocks: ($unblocks | display)
+                }
+            ]
+            | sort_by((.lane | ascii_downcase), (.task_ref | ascii_downcase), .number)
+          ')"
+
+          READY_COUNT="$(printf '%s\n' "$READY_TASKS_JSON" | jq 'length')"
+          MALFORMED_COUNT="$(printf '%s\n' "$READY_TASKS_JSON" | jq '[.[] | select(.task_id_missing)] | length')"
+
+          {
+            echo "### Ready Task Dispatch Discovery"
+            echo
+            echo "- Repository: \`$REPOSITORY\`"
+            echo "- Ready label: \`status:ready\`"
+            echo "- Ready task count: \`$READY_COUNT\`"
+            echo "- Malformed ready task count: \`$MALFORMED_COUNT\`"
+            echo "- Claim requested: \`$CLAIM_MODE\`"
+            echo "- Codex Cloud auto-start requested: \`$START_CODEX_CLOUD\`"
+            echo "- Mutation mode: \`disabled\`"
+            echo "- Issues changed: \`0\`"
+            echo "- Branches created: \`0\`"
+            echo "- PRs created: \`0\`"
+            echo "- Codex invoked: \`no\`"
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$READY_COUNT" = "0" ]; then
+            {
+              echo "No open issues with \`status:ready\` were found."
+              echo
+              echo "This workflow is discovery-only and completed without side effects."
+            } >> "$GITHUB_STEP_SUMMARY"
+
+            echo "ready_count=0" >> "$GITHUB_OUTPUT"
+            echo "malformed_count=0" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          mapfile -t LANES < <(printf '%s\n' "$READY_TASKS_JSON" | jq -r '.[].lane' | sort -f -u)
+
+          {
+            echo "#### Ready tasks by lane"
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          for LANE in "${LANES[@]}"; do
+            {
+              echo "##### \`$LANE\`"
+              echo
+              printf '%s\n' "$READY_TASKS_JSON" | jq -r --arg lane "$LANE" '
+                .[]
+                | select(.lane == $lane)
+                | "- [#\(.number)](\(.url)) `\(.task_ref)`: \(.title)\n  - Agent: `\(.agent)`\n  - Depends on: `\(.depends_on)`\n  - Unblocks: `\(.unblocks)`"
+              '
+              echo
+            } >> "$GITHUB_STEP_SUMMARY"
+          done
+
+          if [ "$MALFORMED_COUNT" != "0" ]; then
+            {
+              echo "#### Malformed ready tasks"
+              echo
+              echo "These ready issues are missing \`Task ID:\` metadata. They are shown with issue titles as summary fallbacks only."
+              echo
+              printf '%s\n' "$READY_TASKS_JSON" | jq -r '
+                .[]
+                | select(.task_id_missing)
+                | "- [#\(.number)](\(.url)): \(.title)"
+              '
+              echo
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          {
+            echo "#### Discovery-only guardrails"
+            echo
+            echo "- No labels were changed."
+            echo "- No issues were assigned or commented on."
+            echo "- No branches or pull requests were created."
+            echo "- Codex was not called."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "ready_count=$READY_COUNT" >> "$GITHUB_OUTPUT"
+          echo "malformed_count=$MALFORMED_COUNT" >> "$GITHUB_OUTPUT"
