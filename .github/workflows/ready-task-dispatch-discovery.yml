@@ -1,6 +1,9 @@
 name: "Ready Task Dispatch Discovery"
 
 "on":
+  issues:
+    types:
+      - labeled
   workflow_dispatch:
     inputs:
       claim:
@@ -25,9 +28,14 @@ permissions:
   contents: read
   actions: write
 
+concurrency:
+  group: ready-task-dispatch-discovery
+  cancel-in-progress: false
+
 jobs:
   discover-ready-tasks:
     name: "Discover ready task issues"
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'status:ready')
     runs-on: ubuntu-latest
 
     steps:
@@ -36,8 +44,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
-          CLAIM_MODE: ${{ inputs.claim }}
-          START_CODEX_CLOUD: ${{ inputs.start_codex_cloud }}
+          CLAIM_MODE: ${{ inputs.claim || 'false' }}
+          START_CODEX_CLOUD: ${{ inputs.start_codex_cloud || 'false' }}
         run: |
           set -euo pipefail
 
