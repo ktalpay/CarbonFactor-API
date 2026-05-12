@@ -1,19 +1,8 @@
-"""Data contracts for CarbonOps API foundation."""
+"""Contract DTOs and response models."""
 
 from dataclasses import asdict, dataclass, field
 
-
-@dataclass(frozen=True)
-class FactorDto:
-    id: str
-    source: str
-    category: str
-    activity: str
-    factor_value: float
-    factor_unit: str
-    region: str | None = None
-    year: int | None = None
-    notes: str | None = None
+from carbonops_api.domain import FactorDto
 
 
 @dataclass(frozen=True)

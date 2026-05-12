@@ -12,6 +12,22 @@ API
   -> Infrastructure
 ```
 
+## Current Python Slice
+
+The current Python implementation now exposes a first structural slice under
+`src/python/src/carbonops_api`:
+
+- `api/`: API boundary wrapper for the current HTTP adapter
+- `application/`: factor lookup use cases
+- `contracts/`: DTOs, query models, response models, and error helpers
+- `domain/`: CarbonFactor entity concepts
+- `infrastructure/`: synthetic in-memory factor data
+- `http/`: existing FastAPI adapter preserved for compatibility
+- `transport/`: framework-neutral transport envelopes and handlers
+
+Top-level compatibility modules remain in place for `catalog`, `errors`, and
+`sample_data` so existing imports keep working during the transition.
+
 ## API Layer
 
 The API layer owns transport-specific behavior:
@@ -42,6 +58,9 @@ web framework or persistence provider:
 The domain layer owns CarbonFactor concepts and validation rules. It should not
 know about HTTP, FastAPI, ASP.NET, PostgreSQL, files, or external source
 systems.
+
+In the current Python slice, `carbonops_api.domain` contains the factor entity
+type and does not import FastAPI, transport, or infrastructure modules.
 
 ## Infrastructure Layer
 
