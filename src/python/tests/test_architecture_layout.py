@@ -35,6 +35,8 @@ def test_domain_modules_do_not_import_forbidden_layers() -> None:
     forbidden_prefixes = (
         "fastapi",
         "starlette",
+        "carbonops_api.application",
+        "carbonops_api.api",
         "carbonops_api.http",
         "carbonops_api.infrastructure",
         "carbonops_api.transport",
@@ -49,11 +51,24 @@ def test_application_modules_do_not_import_http_frameworks() -> None:
     forbidden_prefixes = (
         "fastapi",
         "starlette",
+        "carbonops_api.api",
         "carbonops_api.http",
+        "carbonops_api.infrastructure",
     )
     for path in application_root.glob("*.py"):
         imported = _imported_modules(path)
         assert all(not module.startswith(forbidden_prefixes) for module in imported)
+
+
+def test_catalog_and_transport_use_composition_not_infrastructure() -> None:
+    module_paths = [
+        _module_root() / "catalog.py",
+        _module_root() / "transport" / "handlers.py",
+    ]
+    for path in module_paths:
+        imported = _imported_modules(path)
+        assert "carbonops_api.composition" in imported
+        assert all(not module.startswith("carbonops_api.infrastructure") for module in imported)
 
 
 def test_compatibility_imports_still_resolve() -> None:

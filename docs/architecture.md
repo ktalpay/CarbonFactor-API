@@ -24,9 +24,10 @@ The current Python implementation is organized under:
 Within the Python package, the current transitional architecture is:
 
 - `domain`: factor entity concepts
-- `application`: list/get/search use cases
+- `application`: list/get/search use cases and repository ports
 - `contracts`: public DTOs and response/query models
-- `infrastructure`: synthetic in-memory factor data
+- `infrastructure`: synthetic in-memory factor data and in-memory repository adapters
+- `composition.py`: default wiring between application ports and infrastructure adapters
 - `api`: API boundary wrapper
 - `http`: current FastAPI adapter
 - `transport`: framework-neutral transport behavior
@@ -61,8 +62,10 @@ HTTP request
   -> API adapter
   -> query validation
   -> transport handler
-  -> application/domain behavior
-  -> infrastructure-backed factor lookup
+  -> composition
+  -> application use case
+  -> repository port
+  -> in-memory repository adapter
   -> response envelope
 ```
 

@@ -17,6 +17,8 @@ The package now includes a first clean-architecture-oriented slice:
 - `carbonops_api/contracts`: public DTOs, query models, response models, and
   error helpers
 - `carbonops_api/infrastructure`: synthetic in-memory sample data
+- `carbonops_api/composition.py`: default application wiring for the current
+  in-memory repository implementation
 - `carbonops_api/api`: API boundary wrapper for the current HTTP adapter
 - `carbonops_api/http`: current FastAPI adapter kept for compatibility
 - `carbonops_api/transport`: framework-neutral transport behavior
@@ -39,7 +41,10 @@ It includes:
 
 - contract DTOs and error models
 - synthetic in-memory sample data
-- catalog lookup behavior
+- an application repository port for factor lookup
+- an in-memory repository adapter for current synthetic data
+- centralized composition wiring for the default repository adapter
+- catalog lookup behavior wired through composition
 - transport envelopes and status mapping
 - a thin FastAPI adapter for local testing
 - transitional clean architecture packages with compatibility imports
