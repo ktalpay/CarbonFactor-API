@@ -54,7 +54,7 @@ without rewriting domain behavior:
 - external service clients
 - operational logging and metrics sinks
 
-None of these infrastructure features are added in API-001.
+None of these infrastructure features are added in this phase.
 
 ## Implementation Path Rule
 

@@ -39,7 +39,7 @@ envelope. Unknown framework routes remain framework-level 404 responses.
 - production reporting or certification
 
 CarbonOps-Parser owns source ingestion and parsing. CarbonOps-Web owns frontend
-experience and user interaction. API-001 does not add runtime integration with
+experience and user interaction. This phase does not add runtime integration with
 either project.
 
 ## Future Boundary Questions

@@ -2,9 +2,8 @@
 
 ## Current Phase
 
-API-001 establishes the CarbonOps-API documentation baseline and repository
-identity. It reframes the project as the CarbonOps platform API reference while
-preserving existing behavior.
+The current phase establishes independent Python and .NET implementation roots
+while preserving existing CarbonOps-API behavior and repository identity.
 
 ## Near-Term
 
@@ -12,11 +11,12 @@ preserving existing behavior.
    stable.
 2. Expand documentation around API boundaries, domain model, limitations, and
    production readiness.
-3. Define clean-architecture boundaries before moving implementation files.
+3. Define clean-architecture boundaries after establishing implementation
+   roots.
 4. Prepare a future .NET-first implementation path without changing runtime
    behavior in this task.
-5. Prepare a future independent Python implementation path without adding Python
-   implementation code in this task.
+5. Keep the Python implementation under `src/python` while preserving current
+   behavior.
 
 ## Platform Integration Direction
 
@@ -24,7 +24,7 @@ preserving existing behavior.
 - CarbonOps-Parser remains a separate ingestion and parsing project.
 - CarbonOps-API may later consume parser-produced data through an explicit
   artifact, persistence, or service boundary.
-- No cross-repository runtime coupling is introduced in API-001.
+- No cross-repository runtime coupling is introduced in this phase.
 
 ## Later Phases
 
@@ -34,9 +34,9 @@ preserving existing behavior.
 - Add audit logging and operational observability.
 - Add rate limiting and abuse controls.
 - Define parser data ingestion or synchronization contracts.
-- Add an independent Python implementation path when explicitly scoped.
+- Evolve the Python implementation inside `src/python` when explicitly scoped.
 
-## Non-Goals For API-001
+## Non-Goals For This Phase
 
 - Production deployment
 - External API integrations

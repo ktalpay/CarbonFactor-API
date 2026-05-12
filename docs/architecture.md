@@ -16,7 +16,12 @@ The current checked-in implementation is a pre-alpha local contract foundation:
 - a thin FastAPI adapter for local contract testing
 - behavior tests for current API semantics
 
-Existing source paths and namespaces remain unchanged in API-001.
+The current Python implementation is organized under:
+
+- `src/python/src/carbonops_api`
+- `src/python/tests`
+
+The planned .NET implementation root exists at `src/dotnet`.
 
 ## Platform Relationship
 

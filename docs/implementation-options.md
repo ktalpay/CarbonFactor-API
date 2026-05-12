@@ -15,13 +15,15 @@ Future .NET work should:
 - add persistence only when explicitly scoped
 - keep production hardening work separate from baseline documentation tasks
 
-API-001 does not split the .NET project, create `src/dotnet`, or change runtime
-behavior.
+The planned .NET repository root now exists at `src/dotnet`, but this phase
+does not add a `.sln`, `.csproj`, or runtime implementation.
 
 ## Python
 
 Python is planned as an independent implementation option, similar to the
 CarbonOps-Parser repository model.
+
+The current Python implementation root now exists at `src/python`.
 
 Future Python work should:
 
@@ -31,7 +33,8 @@ Future Python work should:
 - avoid parser execution unless explicitly scoped
 - provide parity evidence against the documented contract
 
-API-001 does not add `src/python` or new Python implementation code.
+This phase reorganizes the existing Python implementation into `src/python`
+without changing runtime behavior.
 
 ## Shared Documentation Contract
 

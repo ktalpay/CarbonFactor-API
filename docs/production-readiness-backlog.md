@@ -44,4 +44,4 @@ areas that must be scoped before production claims are made.
 - suspicious traffic monitoring
 - safe error messages
 
-None of these items are implemented by API-001.
+None of these items are implemented by this phase.

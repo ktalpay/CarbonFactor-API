@@ -37,5 +37,6 @@ Future parity evidence should include:
 
 ## Current Status
 
-API-001 defines the parity model only. It does not add a .NET implementation,
-create `src/python`, or add cross-language test infrastructure.
+The repository now includes `src/python` as the current implementation root and
+`src/dotnet` as the planned .NET root. It still does not add a .NET
+implementation or cross-language test infrastructure.

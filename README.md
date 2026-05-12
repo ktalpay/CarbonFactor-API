@@ -12,13 +12,14 @@ CarbonOps-API.
 
 ## Current Status
 
-CarbonOps-API is in documentation baseline status for API-001.
+CarbonOps-API is in documentation-baseline status with independent Python and
+.NET implementation roots established.
 
 - Existing runtime behavior is preserved.
 - Existing endpoint documentation is preserved.
 - The current local adapter remains pre-alpha and synthetic-data-only.
-- Existing source paths, namespaces, project files, and tests are not renamed in
-  this phase.
+- The active Python implementation now lives under `src/python`.
+- The planned .NET implementation root now exists as `src/dotnet`.
 - No authentication, database persistence, audit logging, rate limiting, parser
   execution, or production deployment behavior is included.
 
@@ -52,6 +53,13 @@ The current checked-in implementation remains a deterministic local contract
 foundation with synthetic sample records, transport envelopes, a thin FastAPI
 adapter for local tests, and behavior tests.
 
+## Repository Layout
+
+- `src/python`: current Python implementation root
+- `src/python/src/carbonops_api`: Python package source
+- `src/python/tests`: Python test suite
+- `src/dotnet`: planned .NET implementation root
+
 ## Implementation Options
 
 ### .NET
@@ -60,8 +68,7 @@ adapter for local tests, and behavior tests.
 future .NET path should move toward clean architecture with separated API,
 application, domain, and infrastructure concerns.
 
-API-001 does not split the .NET project, move files into `src/dotnet`, or add
-new .NET runtime behavior.
+This phase does not add .NET runtime behavior.
 
 ### Python
 
@@ -70,7 +77,7 @@ contributors who prefer Python-oriented API or data workflows. It should follow
 the same public API concepts and domain semantics as the .NET path without
 depending on the .NET implementation.
 
-API-001 does not add new Python implementation code or create `src/python`.
+The current Python implementation root is available at `src/python`.
 
 ## API Boundary
 
@@ -110,11 +117,13 @@ The current domain surface centers on `CarbonFactor`-style records:
 
 The current repository uses synthetic sample data only. CarbonOps-Parser may
 later provide validated source data, but parser execution and cross-repository
-runtime coupling are out of scope for API-001.
+runtime coupling are out of scope for this phase.
 
 ## Documentation Map
 
 - [Documentation Index](docs/index.md)
+- [Python Implementation Root](src/python/README.md)
+- [Planned .NET Root](src/dotnet/README.md)
 - [Architecture](docs/architecture.md)
 - [Clean Architecture](docs/clean-architecture.md)
 - [Clean Code Guidelines](docs/clean-code-guidelines.md)
@@ -136,8 +145,8 @@ runtime coupling are out of scope for API-001.
 - Keep current API behavior stable while contract documentation matures.
 - Define clean-architecture target boundaries before moving implementation
   files.
+- Establish independent Python and .NET implementation roots.
 - Introduce a .NET-first implementation path in a later task.
-- Add an independent Python implementation path in a later task.
 - Define safe integration points with CarbonOps-Parser and CarbonOps-Web.
 - Defer production hardening until explicit production-readiness tasks.
 
@@ -155,12 +164,9 @@ Documentation and implementation work should preserve these guardrails:
 
 ## Non-Goals
 
-API-001 does not:
+This phase does not:
 
-- Split the .NET project.
-- Move files into `src/dotnet`.
-- Add `src/python`.
-- Rename namespaces or project files.
+- Rename the `carbonops_api` package namespace.
 - Add Python implementation code.
 - Add authentication.
 - Add database persistence.

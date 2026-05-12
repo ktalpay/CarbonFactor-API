@@ -30,5 +30,5 @@ CarbonOps-API does not:
 ## Documentation Limits
 
 The documentation describes the intended direction for .NET-first clean
-architecture and an independent Python implementation path. It does not claim
-those implementation paths already exist.
+architecture. The repository now includes a current Python implementation root
+and a planned .NET root, but it does not claim a finished .NET implementation.
