@@ -3,7 +3,7 @@
 ## Baseline
 
 - [Python Implementation Root](../src/python/README.md)
-- [Planned .NET Root](../src/dotnet/README.md)
+- [.NET Implementation Root](../src/dotnet/README.md)
 - [Architecture](architecture.md)
 - [Clean Architecture](clean-architecture.md)
 - [Clean Code Guidelines](clean-code-guidelines.md)
@@ -24,6 +24,14 @@
 - [Roadmap](roadmap.md)
 - [Limitations](limitations.md)
 - [Public Safety](public-safety.md)
+
+## Task Workflow
+
+- [Task Workflow Overview](workflow/README.md)
+- [Task Labels](workflow/task-labels.md)
+- [Task Issue Model](workflow/task-issue-model.md)
+- [Task Prompt Handoff](workflow/task-prompt-handoff.md)
+- [Local Codex CLI Artifact Runner](workflow/local-codex-cli-runbook.md)
 
 ## Evidence
 

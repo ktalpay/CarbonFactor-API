@@ -24,9 +24,10 @@ The current Python implementation is organized under:
 Within the Python package, the current transitional architecture is:
 
 - `domain`: factor entity concepts
-- `application`: list/get/search use cases
+- `application`: list/get/search use cases and repository ports
 - `contracts`: public DTOs and response/query models
-- `infrastructure`: synthetic in-memory factor data
+- `infrastructure`: synthetic in-memory factor data and in-memory repository adapters
+- `composition.py`: default wiring between application ports and infrastructure adapters
 - `api`: API boundary wrapper
 - `http`: current FastAPI adapter
 - `transport`: framework-neutral transport behavior
@@ -34,7 +35,9 @@ Within the Python package, the current transitional architecture is:
 Compatibility modules remain at the top level for `catalog`, `errors`, and
 `sample_data`.
 
-The planned .NET implementation root exists at `src/dotnet`.
+The .NET implementation root at `src/dotnet` now contains an initial .NET 8
+Clean Architecture solution skeleton with API, application, domain, contracts,
+infrastructure, and matching test projects.
 
 ## Platform Relationship
 
@@ -61,15 +64,17 @@ HTTP request
   -> API adapter
   -> query validation
   -> transport handler
-  -> application/domain behavior
-  -> infrastructure-backed factor lookup
+  -> composition
+  -> application use case
+  -> repository port
+  -> in-memory repository adapter
   -> response envelope
 ```
 
 The current implementation expresses this flow with local Python modules and
-synthetic data. The target architecture should later express the same concerns
-through a .NET-first clean-architecture implementation, with an independent
-Python implementation option.
+synthetic data. The .NET skeleton establishes the project boundaries that should
+later express the same concerns through a .NET-first implementation, with the
+Python implementation remaining independent.
 
 ## Target Boundaries
 

@@ -1,0 +1,375 @@
+name: "Task Prompt Handoff Generator"
+
+"on":
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Task issue number to generate prompt for"
+        required: true
+        type: string
+
+permissions:
+  issues: read
+  contents: read
+  actions: write
+
+jobs:
+  generate-task-prompt:
+    name: "Generate Codex-ready task prompt"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: "Generate prompt artifact"
+        id: generate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+        run: |
+          set -euo pipefail
+
+          ISSUE_JSON="$(gh issue view "$ISSUE_NUMBER" \
+            --repo "$REPOSITORY" \
+            --json number,title,body,url)"
+
+          ISSUE_TITLE="$(printf '%s\n' "$ISSUE_JSON" | jq -r '.title')"
+          ISSUE_BODY="$(printf '%s\n' "$ISSUE_JSON" | jq -r '.body // ""')"
+          ISSUE_URL="$(printf '%s\n' "$ISSUE_JSON" | jq -r '.url')"
+
+          trim_blank_edges() {
+            awk '
+              {
+                lines[NR] = $0
+              }
+
+              END {
+                start = 1
+                end = NR
+
+                while (start <= end && lines[start] ~ /^[[:space:]]*$/) {
+                  start++
+                }
+
+                while (end >= start && lines[end] ~ /^[[:space:]]*$/) {
+                  end--
+                }
+
+                for (i = start; i <= end; i++) {
+                  print lines[i]
+                }
+              }
+            '
+          }
+
+          extract_scalar() {
+            local field_name="$1"
+            local body="$2"
+
+            printf '%s\n' "$body" | awk -v field="$field_name" '
+              {
+                line = $0
+                sub(/^[[:space:]]+/, "", line)
+                needle = field ":"
+
+                if (tolower(substr(line, 1, length(needle))) == tolower(needle)) {
+                  value = substr(line, length(needle) + 1)
+                  sub(/^[[:space:]]+/, "", value)
+                  sub(/[[:space:]]+$/, "", value)
+                  print value
+                  exit
+                }
+              }
+            '
+          }
+
+          extract_section() {
+            local field_name="$1"
+            local body="$2"
+
+            printf '%s\n' "$body" | awk -v field="$field_name" '
+              function is_known_header(value) {
+                return tolower(value) ~ /^(task id|lane|status|agent|depends on|unblocks|scope|non-goals|allowed files|forbidden changes|acceptance criteria|required final report|validation|validation commands):/
+              }
+
+              {
+                line = $0
+                trimmed = line
+                sub(/^[[:space:]]+/, "", trimmed)
+                sub(/[[:space:]]+$/, "", trimmed)
+                needle = field ":"
+
+                if (in_section && is_known_header(trimmed)) {
+                  exit
+                }
+
+                if (tolower(substr(trimmed, 1, length(needle))) == tolower(needle)) {
+                  in_section = 1
+                  value = substr(trimmed, length(needle) + 1)
+                  sub(/^[[:space:]]+/, "", value)
+                  if (value != "") {
+                    print value
+                  }
+                  next
+                }
+
+                if (in_section) {
+                  print line
+                }
+              }
+            ' | trim_blank_edges
+          }
+
+          value_or_default() {
+            local value="$1"
+
+            if [ -z "$(printf '%s' "$value" | tr -d '[:space:]')" ]; then
+              printf 'not specified'
+            else
+              printf '%s' "$value"
+            fi
+          }
+
+          slugify() {
+            tr '[:upper:]' '[:lower:]' |
+              sed -E 's/[][]//g; s/[^a-z0-9]+/-/g; s/-+/-/g; s/^-+//; s/-+$//'
+          }
+
+          TASK_ID="$(extract_scalar "Task ID" "$ISSUE_BODY")"
+          LANE="$(extract_scalar "Lane" "$ISSUE_BODY")"
+          STATUS="$(extract_scalar "Status" "$ISSUE_BODY")"
+          AGENT="$(extract_scalar "Agent" "$ISSUE_BODY")"
+          DEPENDS_ON="$(extract_scalar "Depends on" "$ISSUE_BODY")"
+          UNBLOCKS="$(extract_scalar "Unblocks" "$ISSUE_BODY")"
+          SCOPE="$(extract_section "Scope" "$ISSUE_BODY")"
+          NON_GOALS="$(extract_section "Non-goals" "$ISSUE_BODY")"
+          ALLOWED_FILES="$(extract_section "Allowed files" "$ISSUE_BODY")"
+          FORBIDDEN_CHANGES="$(extract_section "Forbidden changes" "$ISSUE_BODY")"
+          ACCEPTANCE_CRITERIA="$(extract_section "Acceptance criteria" "$ISSUE_BODY")"
+          REQUIRED_FINAL_REPORT="$(extract_section "Required final report" "$ISSUE_BODY")"
+          VALIDATION_COMMANDS="$(extract_section "Validation commands" "$ISSUE_BODY")"
+
+          if [ -z "$(printf '%s' "$VALIDATION_COMMANDS" | tr -d '[:space:]')" ]; then
+            VALIDATION_COMMANDS="$(extract_section "Validation" "$ISSUE_BODY")"
+          fi
+
+          if [ -z "$TASK_ID" ]; then
+            echo "Task ID is missing from issue #$ISSUE_NUMBER. Refusing to generate a vague prompt." >&2
+            exit 1
+          fi
+
+          if [ -z "$(printf '%s' "$SCOPE" | tr -d '[:space:]')" ]; then
+            echo "Scope is missing from issue #$ISSUE_NUMBER. Refusing to generate a vague prompt." >&2
+            exit 1
+          fi
+
+          TASK_SLUG="$(printf '%s' "$TASK_ID" | slugify)"
+          CLEAN_TITLE="$(printf '%s' "$ISSUE_TITLE" | sed -E "s/^[[:space:]]*\\[$TASK_ID\\][[:space:]]*//I; s/[][]//g")"
+          TITLE_SLUG="$(printf '%s' "$CLEAN_TITLE" | slugify)"
+
+          if [ -z "$TITLE_SLUG" ]; then
+            FEATURE_BRANCH="feature/$TASK_SLUG"
+          else
+            FEATURE_BRANCH="feature/$TASK_SLUG-$TITLE_SLUG"
+          fi
+
+          LANE_DEFAULTED="$(value_or_default "$LANE")"
+          STATUS_DEFAULTED="$(value_or_default "$STATUS")"
+          AGENT_DEFAULTED="$(value_or_default "$AGENT")"
+          DEPENDS_ON_DEFAULTED="$(value_or_default "$DEPENDS_ON")"
+          UNBLOCKS_DEFAULTED="$(value_or_default "$UNBLOCKS")"
+          NON_GOALS_DEFAULTED="$(value_or_default "$NON_GOALS")"
+          ALLOWED_FILES_DEFAULTED="$(value_or_default "$ALLOWED_FILES")"
+          FORBIDDEN_CHANGES_DEFAULTED="$(value_or_default "$FORBIDDEN_CHANGES")"
+          ACCEPTANCE_CRITERIA_DEFAULTED="$(value_or_default "$ACCEPTANCE_CRITERIA")"
+          REQUIRED_FINAL_REPORT_DEFAULTED="$(value_or_default "$REQUIRED_FINAL_REPORT")"
+
+          if [ -z "$(printf '%s' "$VALIDATION_COMMANDS" | tr -d '[:space:]')" ]; then
+            LANE_NORMALIZED="$(printf '%s' "$LANE" | tr '[:upper:]' '[:lower:]' | sed -E 's/^lane://')"
+
+            case "$LANE_NORMALIZED" in
+              *python*)
+                VALIDATION_COMMANDS="$(printf '%s\n' \
+                  "Run from repository root:" \
+                  "- git status --short" \
+                  "- git diff --check" \
+                  "- git ls-files | grep -E '(__pycache__|\\.pytest_cache|\\.egg-info|bin/|obj/)' should return no tracked generated artifacts" \
+                  "" \
+                  "Run from src/python:" \
+                  "- python --version" \
+                  "- python -m pip install -e \".[test]\"" \
+                  "- python -m pytest -q")"
+                ;;
+              *dotnet*)
+                VALIDATION_COMMANDS="$(printf '%s\n' \
+                  "Run from repository root:" \
+                  "- git status --short" \
+                  "- git diff --check" \
+                  "- git ls-files | grep -E '(__pycache__|\\.pytest_cache|\\.egg-info|bin/|obj/)' should return no tracked generated artifacts" \
+                  "" \
+                  "Run from src/dotnet:" \
+                  "- dotnet restore CarbonOps.Api.sln" \
+                  "- dotnet build CarbonOps.Api.sln" \
+                  "- dotnet test CarbonOps.Api.sln")"
+                ;;
+              *ops*|*docs*)
+                VALIDATION_COMMANDS="$(printf '%s\n' \
+                  "Run from repository root:" \
+                  "- git status --short" \
+                  "- git diff --check" \
+                  "- YAML must parse successfully for changed workflow files, if any" \
+                  "- bash syntax check for embedded workflow run blocks, if practical" \
+                  "- git ls-files | grep -E '(__pycache__|\\.pytest_cache|\\.egg-info|bin/|obj/)' should return no tracked generated artifacts")"
+                ;;
+              *)
+                VALIDATION_COMMANDS="$(printf '%s\n' \
+                  "Run from repository root:" \
+                  "- git status --short" \
+                  "- git diff --check" \
+                  "- git ls-files | grep -E '(__pycache__|\\.pytest_cache|\\.egg-info|bin/|obj/)' should return no tracked generated artifacts")"
+                ;;
+            esac
+          fi
+
+          mkdir -p .agent-handoff
+          PROMPT_PATH=".agent-handoff/$TASK_ID-prompt.md"
+          METADATA_PATH=".agent-handoff/$TASK_ID-metadata.json"
+          ARTIFACT_NAME="task-prompt-$TASK_ID"
+
+          {
+            echo "# Codex Task Prompt"
+            echo
+            echo "Task: $TASK_ID - $ISSUE_TITLE"
+            echo
+            echo "Repository: ktalpay/CarbonOps-API"
+            echo "Base branch: develop"
+            echo "Task-Issue: #$ISSUE_NUMBER"
+            echo "Task issue URL: $ISSUE_URL"
+            echo
+            echo "## Branch Rule"
+            echo
+            echo "- Create a feature branch from develop."
+            echo "- Branch name: \`$FEATURE_BRANCH\`"
+            echo "- Do not commit directly to develop."
+            echo "- Do not modify main."
+            echo "- Commit only on the task branch."
+            echo "- Open a pull request to develop if validation passes."
+            echo "- Do not merge the pull request."
+            echo
+            echo "## Task Metadata"
+            echo
+            echo "- Task ID: \`$TASK_ID\`"
+            echo "- Lane: \`$LANE_DEFAULTED\`"
+            echo "- Status: \`$STATUS_DEFAULTED\`"
+            echo "- Agent: \`$AGENT_DEFAULTED\`"
+            echo "- Depends on: \`$DEPENDS_ON_DEFAULTED\`"
+            echo "- Unblocks: \`$UNBLOCKS_DEFAULTED\`"
+            echo
+            echo "## Scope"
+            echo
+            printf '%s\n' "$SCOPE"
+            echo
+            echo "## Non-Goals"
+            echo
+            printf '%s\n' "$NON_GOALS_DEFAULTED"
+            echo
+            echo "## Allowed Files"
+            echo
+            printf '%s\n' "$ALLOWED_FILES_DEFAULTED"
+            echo
+            echo "## Forbidden Changes"
+            echo
+            printf '%s\n' "$FORBIDDEN_CHANGES_DEFAULTED"
+            echo
+            echo "## Acceptance Criteria"
+            echo
+            printf '%s\n' "$ACCEPTANCE_CRITERIA_DEFAULTED"
+            echo
+            echo "## Validation"
+            echo
+            printf '%s\n' "$VALIDATION_COMMANDS"
+            echo
+            echo "## Generated Artifact Guardrails"
+            echo
+            echo "- Do not commit generated prompt artifacts."
+            echo "- Do not commit \`.agent-handoff/\` contents."
+            echo "- Do not include generated caches, \`bin/\`, \`obj/\`, \`__pycache__/\`, \`.pytest_cache/\`, or \`*.egg-info\`."
+            echo "- Do not add secrets, tokens, local machine paths, or environment-specific configuration."
+            echo
+            echo "## Pull Request Requirements"
+            echo
+            echo "The PR body must include:"
+            echo
+            echo "- Summary"
+            echo "- Files changed"
+            echo "- Validation performed"
+            echo "- Remaining risks"
+            echo "- Task-ID: $TASK_ID"
+            echo "- Task-Issue: #$ISSUE_NUMBER"
+            echo "- Task-Branch: $FEATURE_BRANCH"
+            echo
+            echo "## Required Final Report"
+            echo
+            printf '%s\n' "$REQUIRED_FINAL_REPORT_DEFAULTED"
+          } > "$PROMPT_PATH"
+
+          jq -n \
+            --arg repository "ktalpay/CarbonOps-API" \
+            --arg base_branch "develop" \
+            --arg issue_number "$ISSUE_NUMBER" \
+            --arg issue_url "$ISSUE_URL" \
+            --arg issue_title "$ISSUE_TITLE" \
+            --arg task_id "$TASK_ID" \
+            --arg lane "$LANE_DEFAULTED" \
+            --arg status "$STATUS_DEFAULTED" \
+            --arg agent "$AGENT_DEFAULTED" \
+            --arg depends_on "$DEPENDS_ON_DEFAULTED" \
+            --arg unblocks "$UNBLOCKS_DEFAULTED" \
+            --arg branch "$FEATURE_BRANCH" \
+            --arg prompt_path "$PROMPT_PATH" \
+            --arg artifact_name "$ARTIFACT_NAME" \
+            '{
+              repository: $repository,
+              base_branch: $base_branch,
+              issue_number: $issue_number,
+              issue_url: $issue_url,
+              issue_title: $issue_title,
+              task_id: $task_id,
+              lane: $lane,
+              status: $status,
+              agent: $agent,
+              depends_on: $depends_on,
+              unblocks: $unblocks,
+              branch: $branch,
+              prompt_path: $prompt_path,
+              artifact_name: $artifact_name
+            }' > "$METADATA_PATH"
+
+          {
+            echo "### Task Prompt Handoff Generator"
+            echo
+            echo "- Task ID: \`$TASK_ID\`"
+            echo "- Issue number: \`#$ISSUE_NUMBER\`"
+            echo "- Lane: \`$LANE_DEFAULTED\`"
+            echo "- Agent: \`$AGENT_DEFAULTED\`"
+            echo "- Generated branch name: \`$FEATURE_BRANCH\`"
+            echo "- Artifact name: \`$ARTIFACT_NAME\`"
+            echo "- Prompt path: \`$PROMPT_PATH\`"
+            echo "- Metadata path: \`$METADATA_PATH\`"
+            echo
+            echo "No issue was modified, no branch was created, no PR was opened, and Codex was not called."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "task_id=$TASK_ID" >> "$GITHUB_OUTPUT"
+          echo "artifact_name=$ARTIFACT_NAME" >> "$GITHUB_OUTPUT"
+          echo "feature_branch=$FEATURE_BRANCH" >> "$GITHUB_OUTPUT"
+          echo "prompt_path=$PROMPT_PATH" >> "$GITHUB_OUTPUT"
+          echo "metadata_path=$METADATA_PATH" >> "$GITHUB_OUTPUT"
+
+      - name: "Upload task prompt artifact"
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.generate.outputs.artifact_name }}
+          path: |
+            ${{ steps.generate.outputs.prompt_path }}
+            ${{ steps.generate.outputs.metadata_path }}
+          if-no-files-found: error
