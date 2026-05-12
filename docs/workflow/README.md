@@ -18,10 +18,13 @@ review and merge.
 
 Current automation supports merged-task watching, ready-task discovery, and
 prompt handoff generation. It does not create labels, create branches, open
-pull requests, run Codex, or merge work.
+pull requests, run Codex, or merge work. Local helper scripts can consume
+generated prompt artifacts, but still leave Codex execution, PR review, and
+merge under user control.
 
 ## Documentation
 
 - [Task Labels](task-labels.md)
 - [Task Issue Model](task-issue-model.md)
 - [Task Prompt Handoff](task-prompt-handoff.md)
+- [Local Codex CLI Artifact Runner](local-codex-cli-runbook.md)
