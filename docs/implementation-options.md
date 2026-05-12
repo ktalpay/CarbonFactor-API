@@ -37,6 +37,10 @@ This phase reorganizes the existing Python implementation into `src/python`
 without changing runtime behavior, and introduces a first clean-architecture
 package slice under `src/python/src/carbonops_api`.
 
+That slice now includes an application repository port plus an in-memory
+infrastructure adapter so lookup use cases no longer depend directly on
+synthetic data modules.
+
 ## Shared Documentation Contract
 
 Both implementation paths should align to:

@@ -53,6 +53,9 @@ web framework or persistence provider:
 - validate request intent before infrastructure access
 - coordinate future parser-fed or persisted data reads
 
+The current Python slice now introduces an application repository port for
+factor lookup so use cases do not read synthetic infrastructure data directly.
+
 ## Domain Layer
 
 The domain layer owns CarbonFactor concepts and validation rules. It should not
@@ -68,12 +71,17 @@ The infrastructure layer should contain implementation details that can change
 without rewriting domain behavior:
 
 - database access
+- in-memory repository adapters
 - parser-produced data ingestion boundaries
 - cache providers
 - external service clients
 - operational logging and metrics sinks
 
 None of these infrastructure features are added in this phase.
+
+The current Python slice includes an in-memory repository adapter backed by
+synthetic sample data. Transport and compatibility wiring use that adapter to
+preserve current behavior.
 
 ## Implementation Path Rule
 

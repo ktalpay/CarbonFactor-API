@@ -1,5 +1,6 @@
-"""Application use cases for CarbonOps API."""
+"""Application use cases and ports for CarbonOps API."""
 
 from carbonops_api.application.factors import get_factor_by_id, list_factors, search_factors
+from carbonops_api.application.ports import FactorRepository
 
-__all__ = ["get_factor_by_id", "list_factors", "search_factors"]
+__all__ = ["FactorRepository", "get_factor_by_id", "list_factors", "search_factors"]

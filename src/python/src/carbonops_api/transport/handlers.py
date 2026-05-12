@@ -2,6 +2,7 @@
 
 from carbonops_api.application import get_factor_by_id, search_factors
 from carbonops_api.contracts import ApiError, FactorDetailResponse, FactorListResponse, FactorQuery
+from carbonops_api.infrastructure import InMemoryFactorRepository
 from carbonops_api.transport.envelope import ErrorEnvelope, ResponseEnvelope
 from carbonops_api.transport.serialization import (
     serialize_detail_response,
@@ -14,6 +15,7 @@ _ALLOWED_FILTERS = {"category", "activity", "region", "year"}
 
 
 def handle_list_factors(query: dict) -> ResponseEnvelope:
+    repository = InMemoryFactorRepository()
     extra_filters = {k: v for k, v in query.items() if k not in _ALLOWED_FILTERS}
 
     year_value = query.get("year")
@@ -26,7 +28,7 @@ def handle_list_factors(query: dict) -> ResponseEnvelope:
         region=query.get("region"),
         year=year_value,
     )
-    result = search_factors(query=factor_query, extra_filters=extra_filters)
+    result = search_factors(repository=repository, query=factor_query, extra_filters=extra_filters)
     if isinstance(result, ApiError):
         return _error_response(result)
 
@@ -35,7 +37,7 @@ def handle_list_factors(query: dict) -> ResponseEnvelope:
 
 
 def handle_get_factor(factor_id: str) -> ResponseEnvelope:
-    result = get_factor_by_id(factor_id)
+    result = get_factor_by_id(InMemoryFactorRepository(), factor_id)
     if isinstance(result, ApiError):
         return _error_response(result)
 

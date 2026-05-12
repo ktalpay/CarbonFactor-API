@@ -39,7 +39,9 @@ It includes:
 
 - contract DTOs and error models
 - synthetic in-memory sample data
-- catalog lookup behavior
+- an application repository port for factor lookup
+- an in-memory repository adapter for current synthetic data
+- catalog lookup behavior wired through the repository adapter
 - transport envelopes and status mapping
 - a thin FastAPI adapter for local testing
 - transitional clean architecture packages with compatibility imports
