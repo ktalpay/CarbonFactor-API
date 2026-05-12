@@ -31,6 +31,7 @@
 - [Task Labels](workflow/task-labels.md)
 - [Task Issue Model](workflow/task-issue-model.md)
 - [Task Prompt Handoff](workflow/task-prompt-handoff.md)
+- [Local Codex CLI Artifact Runner](workflow/local-codex-cli-runbook.md)
 
 ## Evidence
 
