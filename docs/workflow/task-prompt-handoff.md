@@ -28,6 +28,10 @@ Those files are uploaded as a GitHub Actions artifact named
 The workflow does not modify the issue, create branches, open pull requests,
 call Codex, or require secrets.
 
+Ready Task Dispatch Discovery can trigger this generator automatically when a
+task issue receives the `status:ready` label. Discovery remains read-only and
+does not mutate labels, so prompt generation does not create a label loop.
+
 ## Required Issue Fields
 
 - `Task ID`
