@@ -1,12 +1,5 @@
-bin/
-obj/
-.vs/
-.vscode/
-.idea/
-*.user
-*.suo
-TestResults/
-*.trx
-coverage/
-coverage.*
-
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/

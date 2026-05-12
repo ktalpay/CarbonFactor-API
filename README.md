@@ -1,86 +1,177 @@
-# CarbonFactor API
+# CarbonOps-API
 
-CarbonFactor API is a .NET 8 API foundation for ingesting, validating, normalizing, querying, and summarizing carbon factor records.
+CarbonOps-API is the backend API reference project for the CarbonOps platform.
+It is documented as a .NET-first API foundation that will evolve toward clean
+architecture while preserving a future independent Python implementation path,
+similar to the CarbonOps-Parser repository model.
 
-The project is intentionally small and reviewable. It demonstrates API contract consistency, domain validation boundaries, deterministic normalization, in-memory storage, query pagination, and technical reporting-support summaries.
+The repository was previously framed as CarbonFactor API. In this repository,
+`CarbonFactor` remains valid domain wording when it refers to a carbon factor
+record or related entity. Product and repository references should use
+CarbonOps-API.
 
-## What The API Does
+## Current Status
 
-- Accepts single and batch carbon factor records.
-- Validates required fields, supported categories, supported units, numeric emission values, and effective-year bounds.
-- Normalizes common category and unit variations into stable values.
-- Stores accepted records in an in-memory repository for demonstration.
-- Exposes lookup, query, pagination, and summary endpoints.
-- Returns predictable structured error responses.
+CarbonOps-API is in documentation-baseline status with independent Python and
+.NET implementation roots established.
 
-## What The API Does Not Do
+- Existing runtime behavior is preserved.
+- Existing endpoint documentation is preserved.
+- The current local adapter remains pre-alpha and synthetic-data-only.
+- The active Python implementation now lives under `src/python`.
+- The planned .NET implementation root now exists as `src/dotnet`.
+- No authentication, database persistence, audit logging, rate limiting, parser
+  execution, or production deployment behavior is included.
 
-- It does not include authentication or authorization yet.
-- It does not include an audit trail.
-- It does not include rate limiting.
-- It does not include durable persistence; data is not retained beyond process lifetime.
-- It does not run asynchronous batch processing.
-- It does not import CSV or spreadsheet files yet.
-- It does not produce regulatory reports or replace legal, accounting, or compliance review.
-- It does not include private data, customer data, credentials, or production secrets.
+## Phase 1 Scope
 
-## Local Development
+Phase 1 establishes the public documentation baseline for CarbonOps-API:
 
-Restore and build:
+1. Present the repository as the CarbonOps platform API project.
+2. Document API boundaries and current limitations.
+3. Preserve the existing carbon factor lookup contract.
+4. Define the future clean-architecture direction.
+5. Define planned .NET and Python implementation options.
+6. Clarify how CarbonOps-API relates to CarbonOps-Parser and CarbonOps-Web.
 
-```bash
-dotnet restore
-dotnet build
-```
-
-Run locally:
-
-```bash
-dotnet run --project src/CarbonFactor.Api
-```
-
-Run tests:
-
-```bash
-dotnet test
-```
-
-## API Documentation
-
-Swagger/OpenAPI is available in local development:
+## Architecture At A Glance
 
 ```text
-http://localhost:5000/swagger
+CarbonOps-Web
+  -> CarbonOps-API
+  -> API boundary and transport contract
+  -> CarbonFactor domain model
+  -> data access boundary
+  -> future parser-fed or persisted factor records
+
+CarbonOps-Parser
+  -> produces validated carbon factor source data in a separate project
+  -> may provide future input artifacts or persistence feeds
 ```
 
-The generated OpenAPI JSON is available at:
+The current checked-in implementation remains a deterministic local contract
+foundation with synthetic sample records, transport envelopes, a thin FastAPI
+adapter for local tests, and behavior tests.
 
-```text
-http://localhost:5000/swagger/v1/swagger.json
-```
+## Repository Layout
 
-## Endpoint Overview
+- `src/python`: current Python implementation root
+- `src/python/src/carbonops_api`: Python package source
+- `src/python/tests`: Python test suite
+- `src/dotnet`: planned .NET implementation root
 
-- Health: `GET /health`
-- Query factors: `GET /api/carbon-factors`
-- Create one factor: `POST /api/carbon-factors`
-- Batch ingest factors: `POST /api/carbon-factors/batch`
-- Get a factor by id: `GET /api/carbon-factors/{id}`
-- Dataset summary: `GET /api/carbon-factors/summary`
+## Implementation Options
 
-## Documentation
+### .NET
 
-- [Documentation index](docs/index.md)
-- [Current architecture state](docs/architecture/current-state.md)
-- [Error handling](docs/api/error-handling.md)
-- [Ingestion](docs/api/ingestion.md)
-- [Querying and pagination](docs/api/querying.md)
-- [Reporting-support summary](docs/api/reporting-summary.md)
-- [Configuration](docs/configuration.md)
+.NET is the intended primary implementation direction for the platform API. The
+future .NET path should move toward clean architecture with separated API,
+application, domain, and infrastructure concerns.
+
+This phase does not add .NET runtime behavior.
+
+### Python
+
+Python is planned as an independent implementation option for users and
+contributors who prefer Python-oriented API or data workflows. It should follow
+the same public API concepts and domain semantics as the .NET path without
+depending on the .NET implementation.
+
+The current Python implementation root is available at `src/python`.
+
+## API Boundary
+
+CarbonOps-API owns the backend API boundary for carbon factor lookup and related
+platform workflows.
+
+Current local routes are unchanged:
+
+- `GET /health`
+- `GET /factors`
+- `GET /factors/{factor_id}`
+
+`GET /factors` supports only these query parameters:
+
+- `category`
+- `activity`
+- `region`
+- `year`
+
+Unsupported query keys return a deterministic transport error envelope with
+HTTP 400 and `invalid_query`. Unknown framework routes remain FastAPI-native
+404 responses and are intentionally not wrapped by transport envelopes.
+
+## Domain Model Summary
+
+The current domain surface centers on `CarbonFactor`-style records:
+
+- `id`
+- `source`
+- `category`
+- `activity`
+- `factor_value`
+- `factor_unit`
+- `region`
+- `year`
+- `notes`
+
+The current repository uses synthetic sample data only. CarbonOps-Parser may
+later provide validated source data, but parser execution and cross-repository
+runtime coupling are out of scope for this phase.
+
+## Documentation Map
+
+- [Documentation Index](docs/index.md)
+- [Python Implementation Root](src/python/README.md)
+- [Planned .NET Root](src/dotnet/README.md)
+- [Architecture](docs/architecture.md)
+- [Clean Architecture](docs/clean-architecture.md)
+- [Clean Code Guidelines](docs/clean-code-guidelines.md)
+- [API Boundaries](docs/api-boundaries.md)
+- [Domain Model](docs/domain-model.md)
+- [Implementation Options](docs/implementation-options.md)
+- [Parity Model](docs/parity-model.md)
+- [API Contract](docs/api-contract.md)
+- [HTTP Adapter](docs/http-adapter.md)
+- [Transport Boundary](docs/transport-boundary.md)
+- [Production Readiness Backlog](docs/production-readiness-backlog.md)
 - [Roadmap](docs/roadmap.md)
+- [Limitations](docs/limitations.md)
+- [Public Safety](docs/public-safety.md)
 
-## Public-Safe Limitations
+## Roadmap Summary
 
-This repository is a technical reference and sample API. The in-memory store exists to demonstrate API contracts, validation, querying, and workflow boundaries. Durable persistence is intentionally deferred to a future task.
+- Complete the documentation baseline.
+- Keep current API behavior stable while contract documentation matures.
+- Define clean-architecture target boundaries before moving implementation
+  files.
+- Establish independent Python and .NET implementation roots.
+- Introduce a .NET-first implementation path in a later task.
+- Define safe integration points with CarbonOps-Parser and CarbonOps-Web.
+- Defer production hardening until explicit production-readiness tasks.
 
-The sample contracts and documentation are generic, and runtime configuration examples do not contain secrets. The API is not a substitute for legal, accounting, or compliance review.
+## Governance
+
+Documentation and implementation work should preserve these guardrails:
+
+- Do not overstate production readiness.
+- Keep CarbonOps-API independent from CarbonOps-Parser and CarbonOps-Web at
+  runtime unless a later task explicitly adds an integration.
+- Treat `CarbonFactor` as domain terminology, not the repository name.
+- Preserve endpoint behavior unless a task explicitly changes the public
+  contract.
+- Keep .NET and Python implementation paths independent when they are added.
+
+## Non-Goals
+
+This phase does not:
+
+- Rename the `carbonops_api` package namespace.
+- Add Python implementation code.
+- Add authentication.
+- Add database persistence.
+- Add audit logging.
+- Add rate limiting.
+- Add parser execution.
+- Change API runtime behavior.
+- Remove existing tests.

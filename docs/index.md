@@ -1,18 +1,32 @@
 # Documentation Index
 
-## Architecture
+## Baseline
 
-- [Current architecture state](architecture/current-state.md)
+- [Python Implementation Root](../src/python/README.md)
+- [Planned .NET Root](../src/dotnet/README.md)
+- [Architecture](architecture.md)
+- [Clean Architecture](clean-architecture.md)
+- [Clean Code Guidelines](clean-code-guidelines.md)
+- [API Boundaries](api-boundaries.md)
+- [Domain Model](domain-model.md)
+- [Implementation Options](implementation-options.md)
+- [Parity Model](parity-model.md)
 
-## API
+## Current API Contract
 
-- [Error handling](api/error-handling.md)
-- [Ingestion](api/ingestion.md)
-- [Querying and pagination](api/querying.md)
-- [Reporting-support summary](api/reporting-summary.md)
+- [API Contract](api-contract.md)
+- [HTTP Adapter](http-adapter.md)
+- [Transport Boundary](transport-boundary.md)
 
-## Operations
+## Roadmap And Readiness
 
-- [Configuration](configuration.md)
+- [Production Readiness Backlog](production-readiness-backlog.md)
 - [Roadmap](roadmap.md)
+- [Limitations](limitations.md)
+- [Public Safety](public-safety.md)
 
+## Evidence
+
+- [Evidence Backlog](evidence-backlog.md)
+- [Technical Evidence Index](evidence/index.md)
+- [API Architecture Evidence](evidence/api-architecture-evidence.md)
