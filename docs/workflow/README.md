@@ -22,6 +22,11 @@ pull requests, run Codex, or merge work. Local helper scripts can consume
 generated prompt artifacts, but still leave Codex execution, PR review, and
 merge under user control.
 
+Adding `status:ready` to an issue is the automatic discovery trigger. Ready Task
+Dispatch Discovery is read-only with respect to issues: it does not add or
+remove labels, assign issues, or comment, which prevents label churn and
+workflow loops.
+
 ## Documentation
 
 - [Task Labels](task-labels.md)

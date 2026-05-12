@@ -321,31 +321,3 @@ jobs:
           gh issue comment "$ISSUE_NUMBER" --repo "$REPOSITORY" --body "$COMMENT_BODY"
           printf '%s\n' "$COMMENT_BODY" >> "$GITHUB_STEP_SUMMARY"
           echo "ready_count=${#UPDATED_DEPENDENTS[@]}" >> "$GITHUB_OUTPUT"
-
-      - name: "Trigger ready task dispatch discovery"
-        if: steps.pr.outputs.should_process == 'true' && steps.mark_issue.outputs.ready_count != '0'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPOSITORY: ${{ github.repository }}
-          READY_COUNT: ${{ steps.mark_issue.outputs.ready_count }}
-        run: |
-          set -euo pipefail
-
-          echo "Triggering Ready Task Dispatch Discovery for $READY_COUNT newly ready dependent task(s)."
-
-          gh workflow run ready-task-dispatch-discovery.yml \
-            --repo "$REPOSITORY" \
-            --ref develop \
-            -f claim=false \
-            -f start_codex_cloud=false
-
-          {
-            echo
-            echo "### Ready Task Dispatch Discovery Trigger"
-            echo
-            echo "- Newly ready dependent tasks: \`$READY_COUNT\`"
-            echo "- Triggered workflow: \`ready-task-dispatch-discovery.yml\`"
-            echo "- Workflow ref: \`develop\`"
-            echo "- Claim requested: \`false\`"
-            echo "- Codex Cloud auto-start requested: \`false\`"
-          } >> "$GITHUB_STEP_SUMMARY"
