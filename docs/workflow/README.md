@@ -16,10 +16,12 @@ review and merge.
    `develop`.
 5. Keep merging as a user-owned review step.
 
-This foundation does not add GitHub Actions dispatch, issue watchers, label
-creation automation, or branch automation.
+Current automation supports merged-task watching, ready-task discovery, and
+prompt handoff generation. It does not create labels, create branches, open
+pull requests, run Codex, or merge work.
 
 ## Documentation
 
 - [Task Labels](task-labels.md)
 - [Task Issue Model](task-issue-model.md)
+- [Task Prompt Handoff](task-prompt-handoff.md)

@@ -30,6 +30,7 @@
 - [Task Workflow Overview](workflow/README.md)
 - [Task Labels](workflow/task-labels.md)
 - [Task Issue Model](workflow/task-issue-model.md)
+- [Task Prompt Handoff](workflow/task-prompt-handoff.md)
 
 ## Evidence
 
