@@ -38,7 +38,8 @@ pull requests.
 
 Codex execution mode reads a prepared prompt artifact and captures local Codex
 output under .agent-handoff/logs/. It does not create branches, commit, push, or
-open pull requests.
+open pull requests. No portable timeout is enforced; stop a long-running Codex
+process with Ctrl-C and inspect the printed log path.
 USAGE
 }
 
@@ -417,6 +418,7 @@ Log path: $LOG_PATH
 Last message path: $LAST_MESSAGE_PATH
 Working root: $CARBONOPS_API_REPO_ROOT
 Sandbox: workspace-write
+Timeout: not enforced by this portable worker wrapper; press Ctrl-C to stop Codex.
 
 No branch, commit, push, pull request, or issue review transition will be performed by this worker mode.
 CODEX_START
