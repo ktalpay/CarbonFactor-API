@@ -16,11 +16,12 @@ review and merge.
    `develop`.
 5. Keep merging as a user-owned review step.
 
-Current automation supports merged-task watching, ready-task discovery, and
-prompt handoff generation. It does not create labels, create branches, open
-pull requests, run Codex, or merge work. Local helper scripts can consume
-generated prompt artifacts, but still leave Codex execution, PR review, and
-merge under user control.
+Current automation supports merged-task watching, ready-task discovery, prompt
+handoff generation, and a dry-run local worker for reading ready task candidates.
+It does not create labels, create branches, open pull requests, run Codex, or
+merge work. Local helper scripts can consume generated prompt artifacts, but
+still leave Codex execution, PR review, and merge under user control until later
+local-worker phases explicitly automate those steps.
 
 Adding `status:ready` to an issue is the automatic discovery trigger. Ready Task
 Dispatch Discovery is read-only with respect to issues: it does not add or
@@ -33,3 +34,4 @@ workflow loops.
 - [Task Issue Model](task-issue-model.md)
 - [Task Prompt Handoff](task-prompt-handoff.md)
 - [Local Codex CLI Artifact Runner](local-codex-cli-runbook.md)
+- [Local Worker Run-Once](local-worker.md)
