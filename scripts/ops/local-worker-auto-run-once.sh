@@ -198,6 +198,27 @@ if ! run_worker_phase "$CURRENT_PHASE" "$SELECTED_ISSUE_NUMBER" --prepare-prompt
   exit 1
 fi
 
+PROMPT_PATH="$(find "$CARBONOPS_API_REPO_ROOT/.agent-handoff/downloads" \
+  -type f \
+  -path "*/task-prompt-$SELECTED_TASK_ID-*/*-prompt.md" \
+  -print 2>/dev/null | sort | tail -n 1 || true)"
+
+if [ -z "$PROMPT_PATH" ]; then
+  cat <<PROMPT_PENDING
+
+Prompt artifact is not available locally yet.
+
+Issue: #$SELECTED_ISSUE_NUMBER
+Task ID: $SELECTED_TASK_ID
+Expected artifact: task-prompt-$SELECTED_TASK_ID
+
+Auto-run stopped without marking the task as failed. A later scheduled run should retry from the same issue.
+PROMPT_PENDING
+  exit 0
+fi
+
+printf '\nPrepared prompt found: %s\n' "$PROMPT_PATH"
+
 CURRENT_PHASE="run-codex"
 if ! run_worker_phase "$CURRENT_PHASE" "$SELECTED_ISSUE_NUMBER" --run-codex; then
   run_status_report "$SELECTED_ISSUE_NUMBER" "$CURRENT_PHASE" "Auto-run failed while running local Codex."
