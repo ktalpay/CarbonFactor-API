@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$SCRIPT_DIR/lib/repo-guard.sh"
+
 fail() {
   printf 'error: %s\n' "$*" >&2
   exit 1
@@ -27,12 +30,28 @@ PROMPT_PATH="${1:-}"
   fail "prompt file path is required"
 }
 
+carbonops_api_repo_guard_init
+
 [ -f "$PROMPT_PATH" ] || fail "prompt file does not exist: $PROMPT_PATH"
+
+PROMPT_DIR="$(cd "$(dirname "$PROMPT_PATH")" && pwd -P)"
+PROMPT_BASENAME="$(basename "$PROMPT_PATH")"
+PROMPT_ABSOLUTE_PATH="$PROMPT_DIR/$PROMPT_BASENAME"
+
+case "$PROMPT_ABSOLUTE_PATH" in
+  "$CARBONOPS_API_REPO_ROOT"/*)
+    ;;
+  *)
+    fail "prompt file must be inside the CarbonOps-API repo root: $CARBONOPS_API_REPO_ROOT"
+    ;;
+esac
 
 PROMPT_SIZE_BYTES="$(wc -c < "$PROMPT_PATH" | tr -d ' ')"
 [ "$PROMPT_SIZE_BYTES" -gt 0 ] || fail "prompt file is empty: $PROMPT_PATH"
 
-printf 'Prompt file: %s\n' "$PROMPT_PATH"
+printf 'Repository: %s\n' "$CARBONOPS_API_REPOSITORY"
+printf 'Repo root: %s\n' "$CARBONOPS_API_REPO_ROOT"
+printf 'Prompt file: %s\n' "$PROMPT_ABSOLUTE_PATH"
 printf 'Prompt size: %s bytes\n' "$PROMPT_SIZE_BYTES"
 
 if command -v codex >/dev/null 2>&1; then
@@ -45,7 +64,7 @@ cat <<EOF
 
 Recommended Codex CLI command:
 
-  codex exec < "$PROMPT_PATH"
+  codex exec < "$PROMPT_ABSOLUTE_PATH"
 
 Expected behavior:
 

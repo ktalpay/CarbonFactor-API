@@ -23,6 +23,17 @@ download the selected prompt, and print the recommended Codex CLI command.
    git pull --ff-only origin develop
    ```
 
+## Repository Isolation
+
+CarbonOps-API local runner scripts must be run from the CarbonOps-API repository
+only. They verify the current git repository and refuse to run unless
+`origin` points to `ktalpay/CarbonOps-API`.
+
+CarbonOps-Parser and CarbonOps-API must use separate repository roots on the
+MBP 2015. Do not reuse Parser worktrees for API tasks, and do not delete Parser
+worktrees from API scripts. API helper scripts anchor `.agent-handoff/` paths to
+the resolved CarbonOps-API repo root and must not touch sibling repositories.
+
 ## Flow
 
 1. Run Ready Task Dispatch Discovery from GitHub Actions if a fresh prompt
@@ -60,6 +71,8 @@ download the selected prompt, and print the recommended Codex CLI command.
 ## Safety Notes
 
 - `.agent-handoff/` is ignored by git and must not be committed.
+- Scripts refuse to run outside the CarbonOps-API git repository.
+- Scripts anchor downloaded prompt artifacts under the CarbonOps-API repo root.
 - The helper scripts do not mutate GitHub issues.
 - The helper scripts do not create branches, commits, or pull requests.
 - The helper scripts do not call Codex automatically.

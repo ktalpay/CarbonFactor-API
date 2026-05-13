@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$SCRIPT_DIR/lib/repo-guard.sh"
+
 LIMIT="${LIMIT:-100}"
-DOWNLOAD_ROOT="${DOWNLOAD_ROOT:-.agent-handoff/downloads}"
 
 fail() {
   printf 'error: %s\n' "$*" >&2
@@ -40,9 +42,12 @@ require_command gh
 require_command jq
 require_command unzip
 
+carbonops_api_repo_guard_init
+
 gh auth status >/dev/null 2>&1 || fail "gh is not authenticated; run: gh auth login"
 
-REPOSITORY="${REPOSITORY:-$(gh repo view --json nameWithOwner --jq '.nameWithOwner')}"
+REPOSITORY="$CARBONOPS_API_REPOSITORY"
+DOWNLOAD_ROOT="$CARBONOPS_API_REPO_ROOT/.agent-handoff/downloads"
 
 if printf '%s' "$QUERY" | grep -Eq '^[0-9]+$'; then
   ARTIFACT_ID="$QUERY"
