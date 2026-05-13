@@ -33,23 +33,24 @@ It does not:
 
 ## Usage
 
-Run from anywhere inside the CarbonOps-API checkout:
+Run from anywhere inside the CarbonOps-API checkout. Use `bash` explicitly so the
+script does not depend on executable file mode after GitHub API-created commits:
 
 ```bash
-scripts/ops/local-worker-run-once.sh
+bash scripts/ops/local-worker-run-once.sh
 ```
 
 Limit the number of ready issues read from GitHub:
 
 ```bash
-scripts/ops/local-worker-run-once.sh --limit 25
+bash scripts/ops/local-worker-run-once.sh --limit 25
 ```
 
 Filter by lane metadata or lane label:
 
 ```bash
-scripts/ops/local-worker-run-once.sh --lane ops
-scripts/ops/local-worker-run-once.sh --lane dotnet
+bash scripts/ops/local-worker-run-once.sh --lane ops
+bash scripts/ops/local-worker-run-once.sh --lane dotnet
 ```
 
 ## Required Local Tools
