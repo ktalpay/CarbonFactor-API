@@ -554,12 +554,25 @@ Task-Branch: $CURRENT_BRANCH
 PRBODY
 )"
 
-  PR_URL="$(gh pr create \
+  EXISTING_PR_URL="$(gh pr list \
     --repo "$CARBONOPS_API_REPOSITORY" \
     --base develop \
     --head "$CURRENT_BRANCH" \
-    --title "$PR_TITLE" \
-    --body "$PR_BODY")"
+    --state open \
+    --json url \
+    --jq '.[0].url // ""')"
+
+  if [ -n "$EXISTING_PR_URL" ]; then
+    PR_URL="$EXISTING_PR_URL"
+    printf '\nExisting pull request found for branch %s: %s\n' "$CURRENT_BRANCH" "$PR_URL"
+  else
+    PR_URL="$(gh pr create \
+      --repo "$CARBONOPS_API_REPOSITORY" \
+      --base develop \
+      --head "$CURRENT_BRANCH" \
+      --title "$PR_TITLE" \
+      --body "$PR_BODY")"
+  fi
 
   gh issue edit "$SELECTED_ISSUE_NUMBER" \
     --repo "$CARBONOPS_API_REPOSITORY" \
@@ -568,7 +581,7 @@ PRBODY
 
   gh issue comment "$SELECTED_ISSUE_NUMBER" \
     --repo "$CARBONOPS_API_REPOSITORY" \
-    --body "Local worker opened PR for this task: $PR_URL"
+    --body "Local worker opened or found PR for this task: $PR_URL"
 
   cat <<PR_DONE
 
