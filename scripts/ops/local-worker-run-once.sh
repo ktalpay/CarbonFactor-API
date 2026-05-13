@@ -501,6 +501,13 @@ if [ "$OPEN_PR_MODE" = "true" ]; then
     exit 1
   fi
 
+  fail_if_generated_artifacts_are_staged_or_dirty
+
+  if [ -z "$(git status --short --untracked-files=all)" ]; then
+    printf 'error: refusing to open PR because the working tree has no changes\n' >&2
+    exit 1
+  fi
+
   CURRENT_BRANCH="$(git branch --show-current)"
   if [ "$CURRENT_BRANCH" = "main" ] || [ "$CURRENT_BRANCH" = "develop" ]; then
     printf 'error: refusing to commit directly on protected branch %s\n' "$CURRENT_BRANCH" >&2
@@ -510,13 +517,6 @@ if [ "$OPEN_PR_MODE" = "true" ]; then
   if [ -z "$CURRENT_BRANCH" ]; then
     CURRENT_BRANCH="feature/$(printf '%s' "$SELECTED_TASK_ID" | slugify)-$(printf '%s' "$SELECTED_TITLE" | slugify)"
     git checkout -b "$CURRENT_BRANCH"
-  fi
-
-  fail_if_generated_artifacts_are_staged_or_dirty
-
-  if [ -z "$(git status --short --untracked-files=all)" ]; then
-    printf 'error: refusing to open PR because the working tree has no changes\n' >&2
-    exit 1
   fi
 
   git add -A
