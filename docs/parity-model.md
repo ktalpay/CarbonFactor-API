@@ -57,5 +57,7 @@ JSON names that preserve current Python public field parity, including
 the current Python use-case rules: deterministic id ordering, exact-match
 filters for `category`, `activity`, `region`, and `year`, `not_found` for
 missing factors, and `invalid_query` for non-positive years or unsupported
-extra filters. The .NET path still does not add carbon factor HTTP routes,
-persistence, CRUD behavior, or cross-language test infrastructure.
+extra filters. The .NET path now uses a deterministic in-memory repository
+adapter for local composition and now exposes equivalent minimal HTTP lookup
+routes for list, get-by-id, and search behavior. Persistence, CRUD behavior,
+and cross-language test infrastructure remain out of scope.
