@@ -113,13 +113,13 @@ run_worker_phase() {
 carbonops_api_repo_guard_init
 cd "$CARBONOPS_API_REPO_ROOT"
 
-READY_ISSUES_JSON="$(gh issue list \
+TASK_ISSUES_JSON="$(gh issue list \
   --repo "$CARBONOPS_API_REPOSITORY" \
-  --search 'label:"status:ready" state:open' \
+  --search '(label:"status:in-progress" OR label:"status:ready") state:open' \
   --limit "$LIMIT" \
   --json number,title,body,url,labels)"
 
-READY_TASKS_JSON="$(printf '%s\n' "$READY_ISSUES_JSON" | jq --arg lane_filter "$LANE_FILTER" '
+READY_TASKS_JSON="$(printf '%s\n' "$TASK_ISSUES_JSON" | jq --arg lane_filter "$LANE_FILTER" '
   def field($name):
     [(.body // "" | split("\n")[] | (try capture("^\\s*" + $name + "\\s*:\\s*(?<value>.*)\\s*$"; "i").value catch empty))]
     | first
@@ -137,7 +137,9 @@ READY_TASKS_JSON="$(printf '%s\n' "$READY_ISSUES_JSON" | jq --arg lane_filter "$
         task_id: $task_id,
         lane: (if $lane == "" then "unspecified" else $lane end),
         labels: $label_names,
-        task_id_missing: ($task_id == "")
+        task_id_missing: ($task_id == ""),
+        is_ready: (($label_names | index("status:ready")) != null),
+        is_in_progress: (($label_names | index("status:in-progress")) != null)
       }
     | select(.task_id_missing | not)
     | select(
@@ -146,7 +148,7 @@ READY_TASKS_JSON="$(printf '%s\n' "$READY_ISSUES_JSON" | jq --arg lane_filter "$
         ((.labels | index("lane:" + $lane_filter)) != null)
       )
   ]
-  | sort_by((.lane | ascii_downcase), (.task_id | ascii_downcase), .number)
+  | sort_by((if .is_in_progress then 0 else 1 end), (.lane | ascii_downcase), (.task_id | ascii_downcase), .number)
 ')"
 
 CANDIDATE_COUNT="$(printf '%s\n' "$READY_TASKS_JSON" | jq 'length')"
@@ -172,6 +174,8 @@ SELECTED_ISSUE_NUMBER="$(printf '%s\n' "$SELECTED_TASK_JSON" | jq -r '.number')"
 SELECTED_TASK_ID="$(printf '%s\n' "$SELECTED_TASK_JSON" | jq -r '.task_id')"
 SELECTED_TITLE="$(printf '%s\n' "$SELECTED_TASK_JSON" | jq -r '.title')"
 SELECTED_URL="$(printf '%s\n' "$SELECTED_TASK_JSON" | jq -r '.url')"
+SELECTED_IS_READY="$(printf '%s\n' "$SELECTED_TASK_JSON" | jq -r '.is_ready')"
+SELECTED_IS_IN_PROGRESS="$(printf '%s\n' "$SELECTED_TASK_JSON" | jq -r '.is_in_progress')"
 
 cat <<SELECTED
 
@@ -184,13 +188,21 @@ Tasks selected for processing: 1
 SELECTED
 
 CLAIMED="false"
-CURRENT_PHASE="claim"
 
-if ! run_worker_phase "$CURRENT_PHASE" "$SELECTED_ISSUE_NUMBER" --claim; then
+if [ "$SELECTED_IS_READY" = "true" ]; then
+  CURRENT_PHASE="claim"
+
+  if ! run_worker_phase "$CURRENT_PHASE" "$SELECTED_ISSUE_NUMBER" --claim; then
+    exit 1
+  fi
+
+  CLAIMED="true"
+elif [ "$SELECTED_IS_IN_PROGRESS" = "true" ]; then
+  printf '\nSelected task is already status:in-progress; skipping claim phase.\n'
+else
+  printf 'error: selected task is neither status:ready nor status:in-progress\n' >&2
   exit 1
 fi
-
-CLAIMED="true"
 
 CURRENT_PHASE="prepare-prompt"
 if ! run_worker_phase "$CURRENT_PHASE" "$SELECTED_ISSUE_NUMBER" --prepare-prompt; then
