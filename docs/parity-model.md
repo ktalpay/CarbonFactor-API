@@ -50,6 +50,7 @@ baseline plus application-layer lookup behavior:
 - `CarbonOps.Contracts.FactorDetailResponse`
 - `CarbonOps.Application.Factors.ICarbonFactorRepository`
 - `CarbonOps.Application.Factors.CarbonFactorUseCases`
+- `CarbonOps.Infrastructure.InMemoryCarbonFactorRepository`
 
 The .NET contract models use idiomatic PascalCase C# members with documented
 JSON names that preserve current Python public field parity, including

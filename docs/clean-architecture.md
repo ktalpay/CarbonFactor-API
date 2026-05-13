@@ -112,7 +112,11 @@ without rewriting domain behavior:
 - external service clients
 - operational logging and metrics sinks
 
-None of these infrastructure features are added in this phase.
+The first .NET infrastructure feature is now present as a deterministic
+in-memory carbon factor repository adapter for local, development, and test
+use. The ASP.NET Core composition root registers that adapter together with
+`CarbonFactorUseCases` through DI. Database access and external service
+integrations are still intentionally out of scope in this phase.
 
 The current Python slice includes an in-memory repository adapter backed by
 synthetic sample data. Composition owns the default repository wiring, and
