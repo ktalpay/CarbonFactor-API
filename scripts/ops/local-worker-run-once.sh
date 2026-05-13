@@ -98,9 +98,6 @@ READY_TASKS_JSON="$(printf '%s\n' "$READY_ISSUES_JSON" | jq --arg lane_filter "$
   def display:
     if . == "" then "none" else . end;
 
-  def has_label($name):
-    any((.labels // [])[]?.name; . == $name);
-
   [
     .[]
     | (field("Task ID")) as $task_id
@@ -108,6 +105,7 @@ READY_TASKS_JSON="$(printf '%s\n' "$READY_ISSUES_JSON" | jq --arg lane_filter "$
     | (field("Agent")) as $agent
     | (field("Depends on")) as $depends_on
     | (field("Unblocks")) as $unblocks
+    | [(.labels // [])[]?.name] as $label_names
     | {
         number,
         title,
@@ -119,12 +117,12 @@ READY_TASKS_JSON="$(printf '%s\n' "$READY_ISSUES_JSON" | jq --arg lane_filter "$
         agent: ($agent | display),
         depends_on: ($depends_on | display),
         unblocks: ($unblocks | display),
-        labels: [(.labels // [])[]?.name]
+        labels: $label_names
       }
     | select(
         $lane_filter == "" or
         (.lane | ascii_downcase) == ($lane_filter | ascii_downcase) or
-        has_label("lane:" + $lane_filter)
+        ((.labels | index("lane:" + $lane_filter)) != null)
       )
   ]
   | sort_by((.lane | ascii_downcase), (.task_ref | ascii_downcase), .number)
@@ -157,9 +155,7 @@ fi
 
 printf '\nReady task candidates by lane:\n\n'
 
-mapfile -t LANES < <(printf '%s\n' "$READY_TASKS_JSON" | jq -r '.[].lane' | sort -f -u)
-
-for LANE in "${LANES[@]}"; do
+printf '%s\n' "$READY_TASKS_JSON" | jq -r '.[].lane' | sort -f -u | while IFS= read -r LANE; do
   printf 'Lane: %s\n' "$LANE"
   printf '%s\n' "$READY_TASKS_JSON" | jq -r --arg lane "$LANE" '
     .[]
