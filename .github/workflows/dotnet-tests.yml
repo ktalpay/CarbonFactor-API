@@ -1,0 +1,55 @@
+name: ".NET Tests"
+
+"on":
+  pull_request:
+    branches:
+      - develop
+    paths:
+      - "src/dotnet/**"
+      - ".github/workflows/dotnet-tests.yml"
+  push:
+    branches:
+      - develop
+    paths:
+      - "src/dotnet/**"
+      - ".github/workflows/dotnet-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dotnet-tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dotnet-tests:
+    name: "Restore, build, and test .NET solution"
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: src/dotnet
+
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
+      NUGET_XMLDOC_MODE: skip
+
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v4
+
+      - name: "Setup .NET 8"
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: "Restore"
+        run: dotnet restore CarbonOps.Api.sln
+
+      - name: "Build"
+        run: dotnet build CarbonOps.Api.sln --no-restore
+
+      - name: "Test"
+        run: dotnet test CarbonOps.Api.sln --no-restore --no-build --verbosity normal
