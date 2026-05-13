@@ -5,7 +5,8 @@ prompt/validation surface. The local worker is the MBP 2015 execution boundary
 for future local Codex automation when cloud-side PR creation is not reliable.
 
 This document covers the current worker phases: dry-run discovery, explicit
-claim mode, prompt artifact preparation, local Codex execution, and PR creation.
+claim mode, prompt artifact preparation, local Codex execution, PR creation, and
+in-progress task safety handling.
 
 ## Current Phase
 
@@ -23,6 +24,10 @@ It can:
 - optionally prepare a prompt artifact when `--prepare-prompt` is provided;
 - optionally run local Codex against an already prepared prompt when `--run-codex` is provided;
 - optionally open a pull request for local task changes when `--open-pr` is provided.
+
+A separate helper, `local-worker-in-progress-safety.sh`, lists and explicitly
+marks selected `status:in-progress` tasks as `status:needs-fix` when manual
+operator intervention is required.
 
 Dry-run mode does not:
 
@@ -166,6 +171,21 @@ run directly on `main` or `develop`, refuses generated/local artifact paths,
 commits current task changes, pushes the task branch, opens a PR to `develop`,
 and only then moves the issue to `status:in-review`.
 
+List in-progress tasks:
+
+```bash
+bash scripts/ops/local-worker-in-progress-safety.sh --list-in-progress
+```
+
+Mark a selected in-progress task as needs-fix:
+
+```bash
+bash scripts/ops/local-worker-in-progress-safety.sh --mark-needs-fix --issue 43
+```
+
+The safety helper is explicit and conservative. It does not run Codex, create
+branches, commit, push, or open pull requests.
+
 ## Required Local Tools
 
 The worker requires:
@@ -209,8 +229,7 @@ PR mode also refuses common generated paths such as `bin/`, `obj/`,
 Later tasks should add these capabilities incrementally:
 
 1. failure handling with `status:needs-fix` and issue comments;
-2. stale `status:in-progress` recovery;
-3. optional LaunchAgent or scheduled runner setup.
+2. optional LaunchAgent or scheduled runner setup.
 
 Each phase must remain idempotent and must keep GitHub as the source of truth for
 queue state.
