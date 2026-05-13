@@ -39,5 +39,18 @@ Future parity evidence should include:
 
 The repository now includes `src/python` as the current Python implementation
 root and `src/dotnet` as the initial .NET Clean Architecture solution skeleton.
-It still does not add .NET carbon factor behavior or cross-language test
+The .NET path now includes the first carbon factor domain and public contract
+baseline:
+
+- `CarbonOps.Domain.CarbonFactor`
+- `CarbonOps.Contracts.FactorDto`
+- `CarbonOps.Contracts.FactorQuery`
+- `CarbonOps.Contracts.ApiError`
+- `CarbonOps.Contracts.FactorListResponse`
+- `CarbonOps.Contracts.FactorDetailResponse`
+
+The .NET contract models use idiomatic PascalCase C# members with documented
+JSON names that preserve current Python public field parity, including
+`factor_value` and `factor_unit`. The .NET path still does not add carbon
+factor HTTP routes, persistence, CRUD behavior, or cross-language test
 infrastructure.
