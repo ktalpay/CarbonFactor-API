@@ -5,7 +5,7 @@ prompt/validation surface. The local worker is the MBP 2015 execution boundary
 for future local Codex automation when cloud-side PR creation is not reliable.
 
 This document covers the current worker phases: dry-run discovery, explicit
-claim mode, prompt artifact preparation, and local Codex execution.
+claim mode, prompt artifact preparation, local Codex execution, and PR creation.
 
 ## Current Phase
 
@@ -21,7 +21,8 @@ It can:
 - print a deterministic summary grouped by lane;
 - optionally claim exactly one eligible ready task when `--claim` is provided;
 - optionally prepare a prompt artifact when `--prepare-prompt` is provided;
-- optionally run local Codex against an already prepared prompt when `--run-codex` is provided.
+- optionally run local Codex against an already prepared prompt when `--run-codex` is provided;
+- optionally open a pull request for local task changes when `--open-pr` is provided.
 
 Dry-run mode does not:
 
@@ -74,6 +75,21 @@ Codex execution mode does not:
 - commit or push;
 - open pull requests;
 - move issues to review-ready status.
+
+PR mode may:
+
+- create a task branch when running from a detached worktree;
+- commit current non-generated task changes;
+- push the task branch to origin;
+- open a pull request into `develop`;
+- move the linked issue from `status:in-progress` to `status:in-review` after PR creation succeeds.
+
+PR mode does not:
+
+- merge pull requests;
+- bypass CI;
+- run Codex;
+- include `.agent-handoff/`, `bin/`, `obj/`, Python cache, or package metadata artifacts.
 
 ## Usage
 
@@ -139,6 +155,17 @@ This mode is an execution boundary only. It captures local Codex output and the
 last Codex message under `.agent-handoff/logs/`, but it does not create a task
 branch, commit, push, open a pull request, or mark the issue review-ready.
 
+Open a PR for task changes:
+
+```bash
+bash scripts/ops/local-worker-run-once.sh --open-pr --issue 43
+```
+
+`--open-pr` requires the selected issue to be `status:in-progress`. It refuses to
+run directly on `main` or `develop`, refuses generated/local artifact paths,
+commits current task changes, pushes the task branch, opens a PR to `develop`,
+and only then moves the issue to `status:in-review`.
+
 ## Required Local Tools
 
 The worker requires:
@@ -174,14 +201,16 @@ handled interrupt/termination signal.
 Downloaded prompt artifacts and local Codex logs are local execution inputs and
 outputs only. Do not commit `.agent-handoff/` contents.
 
+PR mode also refuses common generated paths such as `bin/`, `obj/`,
+`__pycache__/`, `.pytest_cache/`, `.egg-info/`, and `.pyc` files.
+
 ## Future Phases
 
 Later tasks should add these capabilities incrementally:
 
-1. branch, commit, push, and PR creation;
-2. failure handling with `status:needs-fix` and issue comments;
-3. stale `status:in-progress` recovery;
-4. optional LaunchAgent or scheduled runner setup.
+1. failure handling with `status:needs-fix` and issue comments;
+2. stale `status:in-progress` recovery;
+3. optional LaunchAgent or scheduled runner setup.
 
 Each phase must remain idempotent and must keep GitHub as the source of truth for
 queue state.
