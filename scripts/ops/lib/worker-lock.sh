@@ -22,10 +22,22 @@ carbonops_api_worker_lock_acquire() {
       ;;
   esac
 
-  CARBONOPS_API_WORKER_LOCK_DIR="$git_dir/carbonops-api-local-worker.lock"
+  local git_lock_dir
+  git_lock_dir="$git_dir/carbonops-api-local-worker.lock"
 
-  if ! mkdir "$CARBONOPS_API_WORKER_LOCK_DIR" 2>/dev/null; then
-    carbonops_api_worker_lock_fail "local worker lock already exists at $CARBONOPS_API_WORKER_LOCK_DIR; another worker may be running"
+  if mkdir "$git_lock_dir" 2>/dev/null; then
+    CARBONOPS_API_WORKER_LOCK_DIR="$git_lock_dir"
+  elif [ -d "$git_lock_dir" ]; then
+    carbonops_api_worker_lock_fail "local worker lock already exists at $git_lock_dir; another worker may be running"
+  else
+    local fallback_lock_root
+    fallback_lock_root="$CARBONOPS_API_REPO_ROOT/.agent-handoff/locks"
+    mkdir -p "$fallback_lock_root"
+    CARBONOPS_API_WORKER_LOCK_DIR="$fallback_lock_root/local-worker.lock"
+
+    if ! mkdir "$CARBONOPS_API_WORKER_LOCK_DIR" 2>/dev/null; then
+      carbonops_api_worker_lock_fail "local worker lock already exists at $CARBONOPS_API_WORKER_LOCK_DIR; another worker may be running"
+    fi
   fi
 
   printf '%s\n' "$$" > "$CARBONOPS_API_WORKER_LOCK_DIR/pid"
