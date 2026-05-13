@@ -18,11 +18,10 @@ review and merge.
 
 Current automation supports merged-task watching, ready-task discovery, prompt
 handoff generation, and a local worker for dry-run discovery, explicit claim,
-prompt preparation, and local Codex execution against a prepared prompt artifact.
-It does not create task branches, open pull requests, or merge work. Local
-Codex execution captures output under `.agent-handoff/logs/` and leaves PR
-creation, review, and merge under user control until later local-worker phases
-explicitly automate those steps.
+prompt preparation, local Codex execution against a prepared prompt artifact, PR
+creation, failure reporting, and bounded auto run-once orchestration. It does
+not merge work. Local Codex execution captures output under
+`.agent-handoff/logs/`, and review and merge remain user-owned steps.
 
 Adding `status:ready` to an issue is the automatic discovery trigger. Ready Task
 Dispatch Discovery is read-only with respect to issues: it does not add or

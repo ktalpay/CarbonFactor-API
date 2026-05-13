@@ -5,8 +5,8 @@ prompt/validation surface. The local worker is the MBP 2015 execution boundary
 for future local Codex automation when cloud-side PR creation is not reliable.
 
 This document covers the current worker phases: dry-run discovery, explicit
-claim mode, prompt artifact preparation, local Codex execution, PR creation, and
-in-progress task safety handling.
+claim mode, prompt artifact preparation, local Codex execution, PR creation,
+auto run-once orchestration, and in-progress task safety handling.
 
 ## Current Phase
 
@@ -24,6 +24,11 @@ It can:
 - optionally prepare a prompt artifact when `--prepare-prompt` is provided;
 - optionally run local Codex against an already prepared prompt when `--run-codex` is provided;
 - optionally open a pull request for local task changes when `--open-pr` is provided.
+
+`local-worker-auto-run-once.sh` is a thin orchestration wrapper around the same
+manual phases. It selects at most one `status:ready` task, optionally filtered by
+lane, then runs claim, prompt preparation, Codex execution, and PR creation for
+that one task.
 
 A separate helper, `local-worker-in-progress-safety.sh`, lists and explicitly
 marks selected `status:in-progress` tasks as `status:needs-fix` when manual
@@ -95,6 +100,29 @@ PR mode does not:
 - bypass CI;
 - run Codex;
 - include `.agent-handoff/`, `bin/`, `obj/`, Python cache, or package metadata artifacts.
+
+Auto run-once mode may:
+
+- read ready task candidates from GitHub;
+- apply a lane filter such as `--lane dotnet`;
+- select the first eligible ready task after deterministic sorting;
+- claim the selected issue;
+- prepare its prompt artifact;
+- run local Codex;
+- open a PR through the existing PR mode.
+
+Auto run-once mode does not:
+
+- process more than one task per run;
+- run continuously;
+- install a LaunchAgent or any other scheduler;
+- merge pull requests;
+- bypass CI.
+
+If no eligible ready task exists, auto run-once exits successfully without
+mutating GitHub state. If a phase fails after the issue is claimed, the wrapper
+calls `local-worker-status-report.sh`, adds a status report comment, and moves
+the issue to `status:needs-fix`.
 
 ## Usage
 
@@ -171,6 +199,24 @@ run directly on `main` or `develop`, refuses generated/local artifact paths,
 commits current task changes, pushes the task branch, opens a PR to `develop`,
 and only then moves the issue to `status:in-review`.
 
+Run the automatic one-task wrapper:
+
+```bash
+bash scripts/ops/local-worker-auto-run-once.sh
+```
+
+Run the automatic wrapper for a single lane:
+
+```bash
+bash scripts/ops/local-worker-auto-run-once.sh --lane ops
+bash scripts/ops/local-worker-auto-run-once.sh --lane dotnet
+```
+
+The automatic wrapper is intentionally bounded. It selects at most one ready
+issue and delegates each phase to `local-worker-run-once.sh`, so the existing
+repository guard, local worker lock, generated artifact guard, and PR creation
+behavior remain the execution boundary.
+
 List in-progress tasks:
 
 ```bash
@@ -228,8 +274,7 @@ PR mode also refuses common generated paths such as `bin/`, `obj/`,
 
 Later tasks should add these capabilities incrementally:
 
-1. failure handling with `status:needs-fix` and issue comments;
-2. optional LaunchAgent or scheduled runner setup.
+1. optional LaunchAgent or scheduled runner setup.
 
 Each phase must remain idempotent and must keep GitHub as the source of truth for
 queue state.
