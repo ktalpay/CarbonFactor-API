@@ -24,9 +24,9 @@ skeleton:
 - `CarbonOps.Api`: ASP.NET Core composition root
 - `tests/*`: smoke and lightweight dependency-boundary tests
 
-The skeleton does not implement carbon factor CRUD behavior yet. It exists to
-establish project boundaries and validation before business behavior is ported
-or added.
+The skeleton does not implement carbon factor CRUD behavior yet. It now includes
+a first .NET carbon factor domain model and API-facing contract DTO baseline so
+contract parity work can proceed without adding HTTP routes or persistence.
 
 ## Current Python Slice
 
@@ -80,8 +80,21 @@ The domain layer owns CarbonFactor concepts and validation rules. It should not
 know about HTTP, FastAPI, ASP.NET, PostgreSQL, files, or external source
 systems.
 
+In the current .NET slice, `CarbonOps.Domain` contains `CarbonFactor` as the
+domain concept for a carbon factor record. It preserves the current contract
+field semantics with PascalCase C# members and required text validation for
+core fields.
+
 In the current Python slice, `carbonops_api.domain` contains the factor entity
 type and does not import FastAPI, transport, or infrastructure modules.
+
+## Contract Layer
+
+The contract layer owns API-facing DTO shapes and deterministic error models.
+In the current .NET slice, `CarbonOps.Contracts` contains `FactorDto`,
+`FactorQuery`, `ApiError`, `FactorListResponse`, and `FactorDetailResponse`.
+These models do not depend on Infrastructure or API projects, and JSON field
+names document parity with the current Python public contract.
 
 ## Infrastructure Layer
 
