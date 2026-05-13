@@ -5,7 +5,7 @@ prompt/validation surface. The local worker is the MBP 2015 execution boundary
 for future local Codex automation when cloud-side PR creation is not reliable.
 
 This document covers the current worker phases: dry-run discovery, explicit
-claim mode, and prompt artifact preparation.
+claim mode, prompt artifact preparation, and local Codex execution.
 
 ## Current Phase
 
@@ -20,7 +20,8 @@ It can:
 - parse task metadata such as Task ID, Lane, Agent, Depends on, and Unblocks;
 - print a deterministic summary grouped by lane;
 - optionally claim exactly one eligible ready task when `--claim` is provided;
-- optionally prepare a prompt artifact when `--prepare-prompt` is provided.
+- optionally prepare a prompt artifact when `--prepare-prompt` is provided;
+- optionally run local Codex against an already prepared prompt when `--run-codex` is provided.
 
 Dry-run mode does not:
 
@@ -54,6 +55,20 @@ Prompt preparation mode does not:
 - create branches;
 - commit or push;
 - open pull requests.
+
+Codex execution mode may:
+
+- locate a previously prepared prompt under `.agent-handoff/downloads/`;
+- run `codex exec` with the prompt provided through stdin;
+- write local logs under `.agent-handoff/logs/`;
+- write the last Codex message under `.agent-handoff/logs/`.
+
+Codex execution mode does not:
+
+- create branches;
+- commit or push;
+- open pull requests;
+- move issues to review-ready status.
 
 ## Usage
 
@@ -104,6 +119,17 @@ under `.agent-handoff/downloads/` and prints the prompt path. If the artifact is
 missing, the worker triggers prompt handoff generation and prints a rerun-later
 message.
 
+Run local Codex against a prepared prompt:
+
+```bash
+bash scripts/ops/local-worker-run-once.sh --run-codex --issue 41
+```
+
+`--run-codex` requires a prepared prompt artifact. Run `--prepare-prompt` first
+if the worker reports that no prepared prompt exists. The worker calls
+`codex exec --cd <repo-root> --sandbox workspace-write -` and feeds the prompt
+through stdin.
+
 ## Required Local Tools
 
 The worker requires:
@@ -113,6 +139,7 @@ The worker requires:
 - `jq`
 - `bash`
 - `unzip` for prompt preparation downloads
+- `codex` for local Codex execution
 
 The GitHub CLI must already be authenticated with access to
 `ktalpay/CarbonOps-API`.
@@ -135,18 +162,17 @@ handled interrupt/termination signal.
 
 ## Generated Artifact Guard
 
-Downloaded prompt artifacts are local execution inputs only. Do not commit
-`.agent-handoff/` contents.
+Downloaded prompt artifacts and local Codex logs are local execution inputs and
+outputs only. Do not commit `.agent-handoff/` contents.
 
 ## Future Phases
 
 Later tasks should add these capabilities incrementally:
 
-1. local Codex CLI execution with timeout and log capture;
-2. branch, commit, push, and PR creation;
-3. failure handling with `status:needs-fix` and issue comments;
-4. stale `status:in-progress` recovery;
-5. optional LaunchAgent or scheduled runner setup.
+1. branch, commit, push, and PR creation;
+2. failure handling with `status:needs-fix` and issue comments;
+3. stale `status:in-progress` recovery;
+4. optional LaunchAgent or scheduled runner setup.
 
 Each phase must remain idempotent and must keep GitHub as the source of truth for
 queue state.
