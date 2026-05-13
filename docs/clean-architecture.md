@@ -25,8 +25,9 @@ skeleton:
 - `tests/*`: smoke and lightweight dependency-boundary tests
 
 The skeleton does not implement carbon factor CRUD behavior yet. It now includes
-a first .NET carbon factor domain model and API-facing contract DTO baseline so
-contract parity work can proceed without adding HTTP routes or persistence.
+a first .NET carbon factor domain model, API-facing contract DTO baseline, and
+application-layer carbon factor lookup use cases so contract parity work can
+proceed without adding HTTP routes or persistence.
 
 ## Current Python Slice
 
@@ -71,8 +72,11 @@ web framework or persistence provider:
 - validate request intent before infrastructure access
 - coordinate future parser-fed or persisted data reads
 
-The current Python slice now introduces an application repository port for
-factor lookup so use cases do not read synthetic infrastructure data directly.
+The current Python slice now includes an application repository port for factor
+lookup so use cases do not read synthetic infrastructure data directly. The
+current .NET slice mirrors that boundary with `ICarbonFactorRepository` in
+`CarbonOps.Application`; its list, get-by-id, and search use cases depend only
+on Domain and Contracts.
 
 ## Domain Layer
 
