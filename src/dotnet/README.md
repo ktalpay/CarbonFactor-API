@@ -13,6 +13,8 @@ for CarbonOps-API.
   deterministic error contract models.
 - `CarbonOps.Application` contains the first carbon factor repository port and
   list, get-by-id, and search use cases.
+- `CarbonOps.Infrastructure` now contains a deterministic in-memory carbon
+  factor repository adapter and DI registration for local/dev/testing use.
 - Test projects provide smoke, boundary, and focused model contract tests.
 - No carbon factor HTTP routes, persistence, authentication, authorization,
   parser execution, background jobs, or production hardening is implemented.
@@ -50,6 +52,18 @@ src/dotnet/
 - `CarbonOps.Infrastructure`: adapter implementations when added; must not
   reference the API project.
 - `CarbonOps.Api`: composition root and ASP.NET Core host.
+
+## Current Infrastructure Adapter
+
+`CarbonOps.Infrastructure` now provides:
+
+- `InMemoryCarbonFactorRepository`: a dependency-free implementation of
+  `ICarbonFactorRepository` backed by deterministic seeded records.
+- `AddCarbonFactorServices()`: DI registration for the in-memory repository and
+  `CarbonFactorUseCases`.
+
+`CarbonOps.Api` uses this registration in `Program.cs`, so the default .NET host
+can resolve `CarbonFactorUseCases` without adding HTTP routes yet.
 
 ## Carbon Factor Contract Baseline
 
