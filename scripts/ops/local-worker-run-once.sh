@@ -9,17 +9,18 @@ source "$SCRIPT_DIR/lib/worker-lock.sh"
 
 usage() {
   cat <<'USAGE'
-Usage: bash scripts/ops/local-worker-run-once.sh [--claim|--prepare-prompt|--run-codex] [--issue <number>] [--lane <lane>] [--limit <count>]
+Usage: bash scripts/ops/local-worker-run-once.sh [--claim|--prepare-prompt|--run-codex|--open-pr] [--issue <number>] [--lane <lane>] [--limit <count>]
 
 Local worker for CarbonOps-API.
 
-Default mode is dry-run only. Mutating/preparation/execution modes must be
+Default mode is dry-run only. Mutating/preparation/execution/PR modes must be
 requested explicitly.
 
 Options:
   --claim            Claim one eligible ready task by moving it to status:in-progress.
   --prepare-prompt   Locate/download a task prompt artifact, or trigger prompt handoff generation.
   --run-codex        Run local Codex CLI against an already prepared prompt artifact.
+  --open-pr          Commit local task changes, push a task branch, and open a PR to develop.
   --issue <number>   Filter candidates to one issue number. Recommended for validation.
   --lane <lane>      Filter ready task candidates by lane label or Lane metadata.
   --limit <count>    Maximum ready issues/artifacts to read. Default: 50.
@@ -40,12 +41,17 @@ Codex execution mode reads a prepared prompt artifact and captures local Codex
 output under .agent-handoff/logs/. It does not create branches, commit, push, or
 open pull requests. No portable timeout is enforced; stop a long-running Codex
 process with Ctrl-C and inspect the printed log path.
+
+PR mode commits current non-generated task changes, pushes a task branch, opens a
+PR to develop, and moves the issue to status:in-review only after PR creation
+succeeds.
 USAGE
 }
 
 CLAIM_MODE="false"
 PREPARE_PROMPT_MODE="false"
 RUN_CODEX_MODE="false"
+OPEN_PR_MODE="false"
 ISSUE_FILTER=""
 LANE_FILTER=""
 LIMIT="50"
@@ -62,6 +68,10 @@ while [ "$#" -gt 0 ]; do
       ;;
     --run-codex)
       RUN_CODEX_MODE="true"
+      shift
+      ;;
+    --open-pr)
+      OPEN_PR_MODE="true"
       shift
       ;;
     --issue)
@@ -104,9 +114,10 @@ REQUESTED_MODES=0
 [ "$CLAIM_MODE" = "true" ] && REQUESTED_MODES=$((REQUESTED_MODES + 1))
 [ "$PREPARE_PROMPT_MODE" = "true" ] && REQUESTED_MODES=$((REQUESTED_MODES + 1))
 [ "$RUN_CODEX_MODE" = "true" ] && REQUESTED_MODES=$((REQUESTED_MODES + 1))
+[ "$OPEN_PR_MODE" = "true" ] && REQUESTED_MODES=$((REQUESTED_MODES + 1))
 
 if [ "$REQUESTED_MODES" -gt 1 ]; then
-  printf 'error: --claim, --prepare-prompt, and --run-codex are mutually exclusive\n' >&2
+  printf 'error: --claim, --prepare-prompt, --run-codex, and --open-pr are mutually exclusive\n' >&2
   exit 1
 fi
 
@@ -146,6 +157,11 @@ command -v jq >/dev/null 2>&1 || {
   exit 1
 }
 
+command -v git >/dev/null 2>&1 || {
+  printf 'error: required command not found: git\n' >&2
+  exit 1
+}
+
 if [ "$PREPARE_PROMPT_MODE" = "true" ]; then
   command -v unzip >/dev/null 2>&1 || {
     printf 'error: required command not found: unzip\n' >&2
@@ -178,6 +194,11 @@ extract_task_id_from_body() {
   '
 }
 
+slugify() {
+  tr '[:upper:]' '[:lower:]' |
+    sed -E 's/[][]//g; s/[^a-z0-9]+/-/g; s/-+/-/g; s/^-+//; s/-+$//'
+}
+
 find_prepared_prompt_path() {
   local task_id="$1"
   local downloads_root="$CARBONOPS_API_REPO_ROOT/.agent-handoff/downloads"
@@ -192,6 +213,18 @@ find_prepared_prompt_path() {
     -print 2>/dev/null |
     sort |
     tail -n 1
+}
+
+fail_if_generated_artifacts_are_staged_or_dirty() {
+  local bad_paths
+  bad_paths="$(git status --short --untracked-files=all |
+    awk '{print $2}' |
+    grep -E '(^|/)(\.agent-handoff|bin|obj|__pycache__|\.pytest_cache)(/|$)|\.egg-info(/|$)|\.pyc$' || true)"
+
+  if [ -n "$bad_paths" ]; then
+    printf 'error: refusing to open PR because generated/local artifact paths are present:\n%s\n' "$bad_paths" >&2
+    exit 1
+  fi
 }
 
 carbonops_api_repo_guard_init
@@ -259,7 +292,7 @@ READY_TASKS_JSON="$(printf '%s\n' "$READY_ISSUES_JSON" | jq --arg lane_filter "$
 
 if [ "$CLAIM_MODE" = "true" ]; then
   CANDIDATE_TASKS_JSON="$(printf '%s\n' "$READY_TASKS_JSON" | jq '[.[] | select(.is_ready)]')"
-elif [ "$PREPARE_PROMPT_MODE" = "true" ] || [ "$RUN_CODEX_MODE" = "true" ]; then
+elif [ "$PREPARE_PROMPT_MODE" = "true" ] || [ "$RUN_CODEX_MODE" = "true" ] || [ "$OPEN_PR_MODE" = "true" ]; then
   CANDIDATE_TASKS_JSON="$READY_TASKS_JSON"
 else
   CANDIDATE_TASKS_JSON="$(printf '%s\n' "$READY_TASKS_JSON" | jq '[.[] | select(.is_ready)]')"
@@ -274,6 +307,8 @@ elif [ "$PREPARE_PROMPT_MODE" = "true" ]; then
   MUTATION_MODE="prompt-prepare"
 elif [ "$RUN_CODEX_MODE" = "true" ]; then
   MUTATION_MODE="codex-run"
+elif [ "$OPEN_PR_MODE" = "true" ]; then
+  MUTATION_MODE="open-pr"
 else
   MUTATION_MODE="disabled"
 fi
@@ -312,6 +347,11 @@ if [ "$READY_COUNT" = "0" ]; then
     exit 1
   fi
 
+  if [ "$OPEN_PR_MODE" = "true" ]; then
+    printf 'error: PR open requested but no eligible task candidate was found\n' >&2
+    exit 1
+  fi
+
   exit 0
 fi
 
@@ -341,6 +381,7 @@ SELECTED_ISSUE_NUMBER="$(printf '%s\n' "$SELECTED_TASK_JSON" | jq -r '.number')"
 SELECTED_TASK_ID="$(printf '%s\n' "$SELECTED_TASK_JSON" | jq -r '.task_id')"
 SELECTED_TASK_ID_MISSING="$(printf '%s\n' "$SELECTED_TASK_JSON" | jq -r '.task_id_missing')"
 SELECTED_TITLE="$(printf '%s\n' "$SELECTED_TASK_JSON" | jq -r '.title')"
+SELECTED_IS_IN_PROGRESS="$(printf '%s\n' "$SELECTED_TASK_JSON" | jq -r '.is_in_progress')"
 
 if [ "$SELECTED_TASK_ID_MISSING" = "true" ] || [ -z "$SELECTED_TASK_ID" ]; then
   printf 'error: refusing selected issue #%s because Task ID metadata is missing\n' "$SELECTED_ISSUE_NUMBER" >&2
@@ -451,6 +492,94 @@ Commits created by worker: 0
 Pull requests opened by worker: 0
 Issue status changed by worker: no
 CODEX_DONE
+  exit 0
+fi
+
+if [ "$OPEN_PR_MODE" = "true" ]; then
+  if [ "$SELECTED_IS_IN_PROGRESS" != "true" ]; then
+    printf 'error: refusing to open PR for issue #%s because it is not status:in-progress\n' "$SELECTED_ISSUE_NUMBER" >&2
+    exit 1
+  fi
+
+  CURRENT_BRANCH="$(git branch --show-current)"
+  if [ "$CURRENT_BRANCH" = "main" ] || [ "$CURRENT_BRANCH" = "develop" ]; then
+    printf 'error: refusing to commit directly on protected branch %s\n' "$CURRENT_BRANCH" >&2
+    exit 1
+  fi
+
+  if [ -z "$CURRENT_BRANCH" ]; then
+    CURRENT_BRANCH="feature/$(printf '%s' "$SELECTED_TASK_ID" | slugify)-$(printf '%s' "$SELECTED_TITLE" | slugify)"
+    git checkout -b "$CURRENT_BRANCH"
+  fi
+
+  fail_if_generated_artifacts_are_staged_or_dirty
+
+  if [ -z "$(git status --short --untracked-files=all)" ]; then
+    printf 'error: refusing to open PR because the working tree has no changes\n' >&2
+    exit 1
+  fi
+
+  git add -A
+  fail_if_generated_artifacts_are_staged_or_dirty
+
+  if git diff --cached --quiet; then
+    printf 'error: refusing to open PR because there are no staged changes\n' >&2
+    exit 1
+  fi
+
+  COMMIT_MESSAGE="$SELECTED_TASK_ID local worker task changes"
+  git commit -m "$COMMIT_MESSAGE"
+  git push -u origin "$CURRENT_BRANCH"
+
+  PR_TITLE="$SELECTED_TASK_ID local worker task changes"
+  PR_BODY="$(cat <<PRBODY
+Summary:
+- Local worker opened this PR from task issue #$SELECTED_ISSUE_NUMBER.
+- Review the diff and validation results before merge.
+
+Files changed:
+- See PR diff.
+
+Validation performed:
+- Local worker generated this PR boundary output.
+- Run repository-specific validation before merge.
+
+Remaining risks:
+- Worker does not merge PRs.
+- CI and human review remain required.
+
+Task-ID: $SELECTED_TASK_ID
+Task-Issue: #$SELECTED_ISSUE_NUMBER
+Task-Branch: $CURRENT_BRANCH
+PRBODY
+)"
+
+  PR_URL="$(gh pr create \
+    --repo "$CARBONOPS_API_REPOSITORY" \
+    --base develop \
+    --head "$CURRENT_BRANCH" \
+    --title "$PR_TITLE" \
+    --body "$PR_BODY")"
+
+  gh issue edit "$SELECTED_ISSUE_NUMBER" \
+    --repo "$CARBONOPS_API_REPOSITORY" \
+    --remove-label "status:in-progress" \
+    --add-label "status:in-review"
+
+  gh issue comment "$SELECTED_ISSUE_NUMBER" \
+    --repo "$CARBONOPS_API_REPOSITORY" \
+    --body "Local worker opened PR for this task: $PR_URL"
+
+  cat <<PR_DONE
+
+Pull request opened.
+
+Issue: #$SELECTED_ISSUE_NUMBER
+Task ID: $SELECTED_TASK_ID
+Branch: $CURRENT_BRANCH
+PR URL: $PR_URL
+New issue status label: status:in-review
+PR_DONE
   exit 0
 fi
 
