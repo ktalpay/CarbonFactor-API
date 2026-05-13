@@ -63,6 +63,11 @@ Codex execution mode may:
 - write local logs under `.agent-handoff/logs/`;
 - write the last Codex message under `.agent-handoff/logs/`.
 
+The worker does not enforce a portable timeout around `codex exec`. If the local
+Codex process runs too long, stop it with `Ctrl-C`; the worker lock is released
+by the exit trap, and the printed log path remains under `.agent-handoff/logs/`
+for inspection.
+
 Codex execution mode does not:
 
 - create branches;
@@ -129,6 +134,10 @@ bash scripts/ops/local-worker-run-once.sh --run-codex --issue 41
 if the worker reports that no prepared prompt exists. The worker calls
 `codex exec --cd <repo-root> --sandbox workspace-write -` and feeds the prompt
 through stdin.
+
+This mode is an execution boundary only. It captures local Codex output and the
+last Codex message under `.agent-handoff/logs/`, but it does not create a task
+branch, commit, push, open a pull request, or mark the issue review-ready.
 
 ## Required Local Tools
 
