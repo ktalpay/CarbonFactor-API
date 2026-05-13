@@ -9,7 +9,7 @@ source "$SCRIPT_DIR/lib/worker-lock.sh"
 
 usage() {
   cat <<'USAGE'
-Usage: scripts/ops/local-worker-run-once.sh [--lane <lane>] [--limit <count>]
+Usage: bash scripts/ops/local-worker-run-once.sh [--lane <lane>] [--limit <count>]
 
 Dry-run only local worker for CarbonOps-API.
 
