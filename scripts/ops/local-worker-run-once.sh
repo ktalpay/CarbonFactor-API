@@ -9,16 +9,17 @@ source "$SCRIPT_DIR/lib/worker-lock.sh"
 
 usage() {
   cat <<'USAGE'
-Usage: bash scripts/ops/local-worker-run-once.sh [--claim|--prepare-prompt] [--issue <number>] [--lane <lane>] [--limit <count>]
+Usage: bash scripts/ops/local-worker-run-once.sh [--claim|--prepare-prompt|--run-codex] [--issue <number>] [--lane <lane>] [--limit <count>]
 
 Local worker for CarbonOps-API.
 
-Default mode is dry-run only. Mutating/preparation modes must be requested
-explicitly.
+Default mode is dry-run only. Mutating/preparation/execution modes must be
+requested explicitly.
 
 Options:
   --claim            Claim one eligible ready task by moving it to status:in-progress.
   --prepare-prompt   Locate/download a task prompt artifact, or trigger prompt handoff generation.
+  --run-codex        Run local Codex CLI against an already prepared prompt artifact.
   --issue <number>   Filter candidates to one issue number. Recommended for validation.
   --lane <lane>      Filter ready task candidates by lane label or Lane metadata.
   --limit <count>    Maximum ready issues/artifacts to read. Default: 50.
@@ -34,11 +35,17 @@ pull requests.
 Prompt preparation mode may trigger prompt handoff generation or download a
 prompt artifact. It does not run Codex, create branches, commit, push, or open
 pull requests.
+
+Codex execution mode reads a prepared prompt artifact and captures local Codex
+output under .agent-handoff/logs/. It does not create branches, commit, push, or
+open pull requests. No portable timeout is enforced; stop a long-running Codex
+process with Ctrl-C and inspect the printed log path.
 USAGE
 }
 
 CLAIM_MODE="false"
 PREPARE_PROMPT_MODE="false"
+RUN_CODEX_MODE="false"
 ISSUE_FILTER=""
 LANE_FILTER=""
 LIMIT="50"
@@ -51,6 +58,10 @@ while [ "$#" -gt 0 ]; do
       ;;
     --prepare-prompt)
       PREPARE_PROMPT_MODE="true"
+      shift
+      ;;
+    --run-codex)
+      RUN_CODEX_MODE="true"
       shift
       ;;
     --issue)
@@ -89,8 +100,13 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-if [ "$CLAIM_MODE" = "true" ] && [ "$PREPARE_PROMPT_MODE" = "true" ]; then
-  printf 'error: --claim and --prepare-prompt are mutually exclusive\n' >&2
+REQUESTED_MODES=0
+[ "$CLAIM_MODE" = "true" ] && REQUESTED_MODES=$((REQUESTED_MODES + 1))
+[ "$PREPARE_PROMPT_MODE" = "true" ] && REQUESTED_MODES=$((REQUESTED_MODES + 1))
+[ "$RUN_CODEX_MODE" = "true" ] && REQUESTED_MODES=$((REQUESTED_MODES + 1))
+
+if [ "$REQUESTED_MODES" -gt 1 ]; then
+  printf 'error: --claim, --prepare-prompt, and --run-codex are mutually exclusive\n' >&2
   exit 1
 fi
 
@@ -137,6 +153,13 @@ if [ "$PREPARE_PROMPT_MODE" = "true" ]; then
   }
 fi
 
+if [ "$RUN_CODEX_MODE" = "true" ]; then
+  command -v codex >/dev/null 2>&1 || {
+    printf 'error: required command not found: codex\n' >&2
+    exit 1
+  }
+fi
+
 extract_task_id_from_body() {
   awk '
     {
@@ -153,6 +176,22 @@ extract_task_id_from_body() {
       }
     }
   '
+}
+
+find_prepared_prompt_path() {
+  local task_id="$1"
+  local downloads_root="$CARBONOPS_API_REPO_ROOT/.agent-handoff/downloads"
+
+  if [ ! -d "$downloads_root" ]; then
+    return 1
+  fi
+
+  find "$downloads_root" \
+    -type f \
+    -path "*/task-prompt-$task_id-*/*-prompt.md" \
+    -print 2>/dev/null |
+    sort |
+    tail -n 1
 }
 
 carbonops_api_repo_guard_init
@@ -220,7 +259,7 @@ READY_TASKS_JSON="$(printf '%s\n' "$READY_ISSUES_JSON" | jq --arg lane_filter "$
 
 if [ "$CLAIM_MODE" = "true" ]; then
   CANDIDATE_TASKS_JSON="$(printf '%s\n' "$READY_TASKS_JSON" | jq '[.[] | select(.is_ready)]')"
-elif [ "$PREPARE_PROMPT_MODE" = "true" ]; then
+elif [ "$PREPARE_PROMPT_MODE" = "true" ] || [ "$RUN_CODEX_MODE" = "true" ]; then
   CANDIDATE_TASKS_JSON="$READY_TASKS_JSON"
 else
   CANDIDATE_TASKS_JSON="$(printf '%s\n' "$READY_TASKS_JSON" | jq '[.[] | select(.is_ready)]')"
@@ -233,6 +272,8 @@ if [ "$CLAIM_MODE" = "true" ]; then
   MUTATION_MODE="claim"
 elif [ "$PREPARE_PROMPT_MODE" = "true" ]; then
   MUTATION_MODE="prompt-prepare"
+elif [ "$RUN_CODEX_MODE" = "true" ]; then
+  MUTATION_MODE="codex-run"
 else
   MUTATION_MODE="disabled"
 fi
@@ -248,7 +289,6 @@ Lane filter: ${LANE_FILTER:-none}
 Candidate count: $READY_COUNT
 Malformed candidate count: $MALFORMED_COUNT
 Mutation mode: $MUTATION_MODE
-Codex invoked: no
 Branches created: 0
 Commits created: 0
 Pull requests opened: 0
@@ -264,6 +304,11 @@ if [ "$READY_COUNT" = "0" ]; then
 
   if [ "$PREPARE_PROMPT_MODE" = "true" ]; then
     printf 'error: prompt preparation requested but no eligible task candidate was found\n' >&2
+    exit 1
+  fi
+
+  if [ "$RUN_CODEX_MODE" = "true" ]; then
+    printf 'error: Codex run requested but no eligible task candidate was found\n' >&2
     exit 1
   fi
 
@@ -345,6 +390,67 @@ Branches created: 0
 Commits created: 0
 Pull requests opened: 0
 PROMPT_TRIGGERED
+  exit 0
+fi
+
+if [ "$RUN_CODEX_MODE" = "true" ]; then
+  PROMPT_PATH="$(find_prepared_prompt_path "$SELECTED_TASK_ID" || true)"
+
+  if [ -z "$PROMPT_PATH" ]; then
+    printf 'error: no prepared prompt found for task %s; run --prepare-prompt first\n' "$SELECTED_TASK_ID" >&2
+    exit 1
+  fi
+
+  LOG_ROOT="$CARBONOPS_API_REPO_ROOT/.agent-handoff/logs"
+  mkdir -p "$LOG_ROOT"
+  TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
+  LOG_PATH="$LOG_ROOT/$SELECTED_TASK_ID-$TIMESTAMP.log"
+  LAST_MESSAGE_PATH="$LOG_ROOT/$SELECTED_TASK_ID-$TIMESTAMP-last-message.md"
+
+  cat <<CODEX_START
+
+Running local Codex CLI.
+
+Issue: #$SELECTED_ISSUE_NUMBER
+Task ID: $SELECTED_TASK_ID
+Prompt path: $PROMPT_PATH
+Log path: $LOG_PATH
+Last message path: $LAST_MESSAGE_PATH
+Working root: $CARBONOPS_API_REPO_ROOT
+Sandbox: workspace-write
+Timeout: not enforced by this portable worker wrapper; press Ctrl-C to stop Codex.
+
+No branch, commit, push, pull request, or issue review transition will be performed by this worker mode.
+CODEX_START
+
+  set +e
+  codex exec \
+    --cd "$CARBONOPS_API_REPO_ROOT" \
+    --sandbox workspace-write \
+    --output-last-message "$LAST_MESSAGE_PATH" \
+    - < "$PROMPT_PATH" 2>&1 | tee "$LOG_PATH"
+  CODEX_STATUS="${PIPESTATUS[0]}"
+  set -e
+
+  if [ "$CODEX_STATUS" -ne 0 ]; then
+    printf '\nerror: local Codex CLI exited with status %s\n' "$CODEX_STATUS" >&2
+    printf 'Log path: %s\n' "$LOG_PATH" >&2
+    exit "$CODEX_STATUS"
+  fi
+
+  cat <<CODEX_DONE
+
+Local Codex CLI completed.
+
+Issue: #$SELECTED_ISSUE_NUMBER
+Task ID: $SELECTED_TASK_ID
+Log path: $LOG_PATH
+Last message path: $LAST_MESSAGE_PATH
+Branches created by worker: 0
+Commits created by worker: 0
+Pull requests opened by worker: 0
+Issue status changed by worker: no
+CODEX_DONE
   exit 0
 fi
 
