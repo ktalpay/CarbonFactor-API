@@ -9,19 +9,20 @@ source "$SCRIPT_DIR/lib/worker-lock.sh"
 
 usage() {
   cat <<'USAGE'
-Usage: bash scripts/ops/local-worker-run-once.sh [--claim] [--issue <number>] [--lane <lane>] [--limit <count>]
+Usage: bash scripts/ops/local-worker-run-once.sh [--claim|--prepare-prompt] [--issue <number>] [--lane <lane>] [--limit <count>]
 
 Local worker for CarbonOps-API.
 
-Default mode is dry-run only. Claim mode must be requested explicitly with
---claim.
+Default mode is dry-run only. Mutating/preparation modes must be requested
+explicitly.
 
 Options:
-  --claim          Claim one eligible ready task by moving it to status:in-progress.
-  --issue <number> Filter candidates to one issue number. Recommended for claim validation.
-  --lane <lane>   Filter ready task candidates by lane label or Lane metadata.
-  --limit <count> Maximum ready issues to read from GitHub. Default: 50.
-  -h, --help      Show this help.
+  --claim            Claim one eligible ready task by moving it to status:in-progress.
+  --prepare-prompt   Locate/download a task prompt artifact, or trigger prompt handoff generation.
+  --issue <number>   Filter candidates to one issue number. Recommended for validation.
+  --lane <lane>      Filter ready task candidates by lane label or Lane metadata.
+  --limit <count>    Maximum ready issues/artifacts to read. Default: 50.
+  -h, --help         Show this help.
 
 Dry-run mode does not mutate GitHub state, create branches, run Codex, download
 artifacts, commit, push, or open pull requests.
@@ -29,10 +30,15 @@ artifacts, commit, push, or open pull requests.
 Claim mode only updates one issue's status label and writes a claim comment. It
 does not run Codex, download artifacts, create branches, commit, push, or open
 pull requests.
+
+Prompt preparation mode may trigger prompt handoff generation or download a
+prompt artifact. It does not run Codex, create branches, commit, push, or open
+pull requests.
 USAGE
 }
 
 CLAIM_MODE="false"
+PREPARE_PROMPT_MODE="false"
 ISSUE_FILTER=""
 LANE_FILTER=""
 LIMIT="50"
@@ -41,6 +47,10 @@ while [ "$#" -gt 0 ]; do
   case "$1" in
     --claim)
       CLAIM_MODE="true"
+      shift
+      ;;
+    --prepare-prompt)
+      PREPARE_PROMPT_MODE="true"
       shift
       ;;
     --issue)
@@ -79,6 +89,11 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
+if [ "$CLAIM_MODE" = "true" ] && [ "$PREPARE_PROMPT_MODE" = "true" ]; then
+  printf 'error: --claim and --prepare-prompt are mutually exclusive\n' >&2
+  exit 1
+fi
+
 case "$LIMIT" in
   ''|*[!0-9]*)
     printf 'error: --limit must be a positive integer\n' >&2
@@ -115,6 +130,13 @@ command -v jq >/dev/null 2>&1 || {
   exit 1
 }
 
+if [ "$PREPARE_PROMPT_MODE" = "true" ]; then
+  command -v unzip >/dev/null 2>&1 || {
+    printf 'error: required command not found: unzip\n' >&2
+    exit 1
+  }
+fi
+
 extract_task_id_from_body() {
   awk '
     {
@@ -145,12 +167,12 @@ if [ -n "$ISSUE_FILTER" ]; then
 
   READY_ISSUES_JSON="$(printf '%s\n' "$ISSUE_JSON" | jq '[
     select(.state == "OPEN")
-    | select(any((.labels // [])[]?.name; . == "status:ready"))
+    | select(any((.labels // [])[]?.name; . == "status:ready" or . == "status:in-progress"))
   ]')"
 else
   READY_ISSUES_JSON="$(gh issue list \
     --repo "$CARBONOPS_API_REPOSITORY" \
-    --search 'label:"status:ready" state:open' \
+    --search '(label:"status:ready" OR label:"status:in-progress") state:open' \
     --limit "$LIMIT" \
     --json number,title,body,url,labels)"
 fi
@@ -183,7 +205,9 @@ READY_TASKS_JSON="$(printf '%s\n' "$READY_ISSUES_JSON" | jq --arg lane_filter "$
         agent: ($agent | display),
         depends_on: ($depends_on | display),
         unblocks: ($unblocks | display),
-        labels: $label_names
+        labels: $label_names,
+        is_ready: (($label_names | index("status:ready")) != null),
+        is_in_progress: (($label_names | index("status:in-progress")) != null)
       }
     | select(
         $lane_filter == "" or
@@ -194,11 +218,21 @@ READY_TASKS_JSON="$(printf '%s\n' "$READY_ISSUES_JSON" | jq --arg lane_filter "$
   | sort_by((.lane | ascii_downcase), (.task_ref | ascii_downcase), .number)
 ')"
 
-READY_COUNT="$(printf '%s\n' "$READY_TASKS_JSON" | jq 'length')"
-MALFORMED_COUNT="$(printf '%s\n' "$READY_TASKS_JSON" | jq '[.[] | select(.task_id_missing)] | length')"
+if [ "$CLAIM_MODE" = "true" ]; then
+  CANDIDATE_TASKS_JSON="$(printf '%s\n' "$READY_TASKS_JSON" | jq '[.[] | select(.is_ready)]')"
+elif [ "$PREPARE_PROMPT_MODE" = "true" ]; then
+  CANDIDATE_TASKS_JSON="$READY_TASKS_JSON"
+else
+  CANDIDATE_TASKS_JSON="$(printf '%s\n' "$READY_TASKS_JSON" | jq '[.[] | select(.is_ready)]')"
+fi
+
+READY_COUNT="$(printf '%s\n' "$CANDIDATE_TASKS_JSON" | jq 'length')"
+MALFORMED_COUNT="$(printf '%s\n' "$CANDIDATE_TASKS_JSON" | jq '[.[] | select(.task_id_missing)] | length')"
 
 if [ "$CLAIM_MODE" = "true" ]; then
   MUTATION_MODE="claim"
+elif [ "$PREPARE_PROMPT_MODE" = "true" ]; then
+  MUTATION_MODE="prompt-prepare"
 else
   MUTATION_MODE="disabled"
 fi
@@ -211,32 +245,36 @@ Repo root: $CARBONOPS_API_REPO_ROOT
 Ready issue limit: $LIMIT
 Issue filter: ${ISSUE_FILTER:-none}
 Lane filter: ${LANE_FILTER:-none}
-Ready candidate count: $READY_COUNT
+Candidate count: $READY_COUNT
 Malformed candidate count: $MALFORMED_COUNT
 Mutation mode: $MUTATION_MODE
 Codex invoked: no
 Branches created: 0
 Commits created: 0
 Pull requests opened: 0
-Artifacts downloaded: 0
 SUMMARY
 
 if [ "$READY_COUNT" = "0" ]; then
-  printf '\nNo ready task candidates found.\n'
+  printf '\nNo eligible task candidates found.\n'
 
   if [ "$CLAIM_MODE" = "true" ]; then
     printf 'error: claim requested but no eligible ready task candidate was found\n' >&2
     exit 1
   fi
 
+  if [ "$PREPARE_PROMPT_MODE" = "true" ]; then
+    printf 'error: prompt preparation requested but no eligible task candidate was found\n' >&2
+    exit 1
+  fi
+
   exit 0
 fi
 
-printf '\nReady task candidates by lane:\n\n'
+printf '\nTask candidates by lane:\n\n'
 
-printf '%s\n' "$READY_TASKS_JSON" | jq -r '.[].lane' | sort -f -u | while IFS= read -r LANE; do
+printf '%s\n' "$CANDIDATE_TASKS_JSON" | jq -r '.[].lane' | sort -f -u | while IFS= read -r LANE; do
   printf 'Lane: %s\n' "$LANE"
-  printf '%s\n' "$READY_TASKS_JSON" | jq -r --arg lane "$LANE" '
+  printf '%s\n' "$CANDIDATE_TASKS_JSON" | jq -r --arg lane "$LANE" '
     .[]
     | select(.lane == $lane)
     | "- #\(.number) `\(.task_ref)`: \(.title)\n  URL: \(.url)\n  Agent: \(.agent)\n  Depends on: \(.depends_on)\n  Unblocks: \(.unblocks)\n  Labels: \(.labels | join(", "))"
@@ -245,28 +283,74 @@ printf '%s\n' "$READY_TASKS_JSON" | jq -r '.[].lane' | sort -f -u | while IFS= r
 done
 
 if [ "$MALFORMED_COUNT" != "0" ]; then
-  printf 'Malformed ready candidates missing Task ID:\n'
-  printf '%s\n' "$READY_TASKS_JSON" | jq -r '
+  printf 'Malformed candidates missing Task ID:\n'
+  printf '%s\n' "$CANDIDATE_TASKS_JSON" | jq -r '
     .[]
     | select(.task_id_missing)
     | "- #\(.number): \(.title)"
   '
 fi
 
-if [ "$CLAIM_MODE" != "true" ]; then
-  printf '\nDry-run completed without GitHub mutations.\n'
-  exit 0
-fi
-
-SELECTED_TASK_JSON="$(printf '%s\n' "$READY_TASKS_JSON" | jq '.[0]')"
+SELECTED_TASK_JSON="$(printf '%s\n' "$CANDIDATE_TASKS_JSON" | jq '.[0]')"
 SELECTED_ISSUE_NUMBER="$(printf '%s\n' "$SELECTED_TASK_JSON" | jq -r '.number')"
 SELECTED_TASK_ID="$(printf '%s\n' "$SELECTED_TASK_JSON" | jq -r '.task_id')"
 SELECTED_TASK_ID_MISSING="$(printf '%s\n' "$SELECTED_TASK_JSON" | jq -r '.task_id_missing')"
 SELECTED_TITLE="$(printf '%s\n' "$SELECTED_TASK_JSON" | jq -r '.title')"
 
 if [ "$SELECTED_TASK_ID_MISSING" = "true" ] || [ -z "$SELECTED_TASK_ID" ]; then
-  printf 'error: refusing to claim issue #%s because Task ID metadata is missing\n' "$SELECTED_ISSUE_NUMBER" >&2
+  printf 'error: refusing selected issue #%s because Task ID metadata is missing\n' "$SELECTED_ISSUE_NUMBER" >&2
   exit 1
+fi
+
+if [ "$PREPARE_PROMPT_MODE" = "true" ]; then
+  ARTIFACT_NAME="task-prompt-$SELECTED_TASK_ID"
+  ARTIFACTS_JSON="$(gh api "repos/$CARBONOPS_API_REPOSITORY/actions/artifacts?per_page=$LIMIT")"
+  ARTIFACT_ID="$(printf '%s\n' "$ARTIFACTS_JSON" | jq -r --arg name "$ARTIFACT_NAME" '
+    [.artifacts[] | select(.name == $name)]
+    | sort_by(.created_at)
+    | reverse
+    | first
+    | .id // empty
+  ')"
+
+  if [ -n "$ARTIFACT_ID" ]; then
+    printf '\nPrompt artifact found: %s (%s)\n' "$ARTIFACT_NAME" "$ARTIFACT_ID"
+    bash "$SCRIPT_DIR/download-task-prompt-artifact.sh" "$ARTIFACT_ID"
+    printf '\nPrompt preparation completed without Codex execution.\n'
+    exit 0
+  fi
+
+  printf '\nPrompt artifact not found: %s\n' "$ARTIFACT_NAME"
+  printf 'Triggering task-prompt-handoff-generator.yml for issue #%s...\n' "$SELECTED_ISSUE_NUMBER"
+
+  gh workflow run task-prompt-handoff-generator.yml \
+    --repo "$CARBONOPS_API_REPOSITORY" \
+    --ref develop \
+    -f issue_number="$SELECTED_ISSUE_NUMBER"
+
+  cat <<PROMPT_TRIGGERED
+
+Prompt handoff generation was triggered.
+
+Issue: #$SELECTED_ISSUE_NUMBER
+Task ID: $SELECTED_TASK_ID
+Expected artifact: $ARTIFACT_NAME
+
+Rerun this command after the workflow artifact is available:
+
+bash scripts/ops/local-worker-run-once.sh --prepare-prompt --issue $SELECTED_ISSUE_NUMBER
+
+Codex invoked: no
+Branches created: 0
+Commits created: 0
+Pull requests opened: 0
+PROMPT_TRIGGERED
+  exit 0
+fi
+
+if [ "$CLAIM_MODE" != "true" ]; then
+  printf '\nDry-run completed without GitHub mutations.\n'
+  exit 0
 fi
 
 CURRENT_ISSUE_JSON="$(gh issue view "$SELECTED_ISSUE_NUMBER" \
