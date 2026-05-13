@@ -11,8 +11,10 @@ for CarbonOps-API.
 - `CarbonOps.Domain` contains the first `CarbonFactor` domain model baseline.
 - `CarbonOps.Contracts` contains the first factor DTO, query, response, and
   deterministic error contract models.
+- `CarbonOps.Application` contains the first carbon factor repository port and
+  list, get-by-id, and search use cases.
 - Test projects provide smoke, boundary, and focused model contract tests.
-- No carbon factor CRUD behavior, persistence, authentication, authorization,
+- No carbon factor HTTP routes, persistence, authentication, authorization,
   parser execution, background jobs, or production hardening is implemented.
 - The current repository behavior remains provided by the Python implementation
   under `src/python`.
@@ -41,7 +43,8 @@ src/dotnet/
 - `CarbonOps.Domain`: domain concepts only; no ASP.NET, EF Core, HTTP, or
   infrastructure dependencies.
 - `CarbonOps.Application`: use-case boundary; may reference domain and
-  contracts, but not infrastructure or API.
+  contracts, but not infrastructure or API. Carbon factor lookup use cases
+  depend on the `ICarbonFactorRepository` port.
 - `CarbonOps.Contracts`: public contract models; no infrastructure or API
   dependency.
 - `CarbonOps.Infrastructure`: adapter implementations when added; must not
@@ -63,6 +66,19 @@ using PascalCase C# property names:
 JSON property attributes preserve public names such as `factor_value` and
 `factor_unit`. Deterministic helpers are available as `ApiError.NotFound(...)`
 and `ApiError.InvalidQuery(...)`.
+
+## Carbon Factor Application Use Cases
+
+`CarbonOps.Application.Factors` contains:
+
+- `ICarbonFactorRepository`: application-owned lookup port returning domain
+  `CarbonFactor` records.
+- `CarbonFactorUseCases.ListCarbonFactors()`: returns factors sorted by id.
+- `CarbonFactorUseCases.GetCarbonFactorById(...)`: returns a detail response or
+  deterministic `not_found` error.
+- `CarbonFactorUseCases.SearchCarbonFactors(...)`: applies exact-match filters
+  for `Category`, `Activity`, `Region`, and `Year`, with deterministic
+  `invalid_query` errors for non-positive years or unsupported extra filters.
 
 ## Validation
 
