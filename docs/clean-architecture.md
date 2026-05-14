@@ -58,8 +58,8 @@ The API layer owns transport-specific behavior:
 - API versioning when later added
 
 The current FastAPI adapter is local-only and preserved for existing tests. The
-current .NET API project includes only minimal host startup and a health
-endpoint for build and smoke-test purposes.
+current .NET API project now includes a minimal host, health endpoint, and the
+first carbon factor lookup routes for list, get-by-id, and search behavior.
 
 ## Application Layer
 

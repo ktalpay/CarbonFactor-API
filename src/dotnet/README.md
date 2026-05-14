@@ -15,9 +15,11 @@ for CarbonOps-API.
   list, get-by-id, and search use cases.
 - `CarbonOps.Infrastructure` now contains a deterministic in-memory carbon
   factor repository adapter and DI registration for local/dev/testing use.
+- `CarbonOps.Api` now exposes minimal HTTP endpoints for factor list, get-by-id,
+  and search behavior using those use cases.
 - Test projects provide smoke, boundary, and focused model contract tests.
-- No carbon factor HTTP routes, persistence, authentication, authorization,
-  parser execution, background jobs, or production hardening is implemented.
+- No persistence, authentication, authorization, parser execution, background
+  jobs, or production hardening is implemented.
 - The current repository behavior remains provided by the Python implementation
   under `src/python`.
 
@@ -62,8 +64,16 @@ src/dotnet/
 - `AddCarbonFactorServices()`: DI registration for the in-memory repository and
   `CarbonFactorUseCases`.
 
-`CarbonOps.Api` uses this registration in `Program.cs`, so the default .NET host
-can resolve `CarbonFactorUseCases` without adding HTTP routes yet.
+`CarbonOps.Api` uses this registration in `Program.cs` and maps the first
+minimal HTTP surface for carbon factor lookup:
+
+- `GET /carbon-factors`
+- `GET /carbon-factors/{factorId}`
+- `GET /carbon-factors/search?category=...&activity=...&region=...&year=...`
+
+Application failures are returned as deterministic HTTP responses using the
+shared `ApiError` contract: `not_found` maps to `404`, and `invalid_query`
+maps to `400`.
 
 ## Carbon Factor Contract Baseline
 
