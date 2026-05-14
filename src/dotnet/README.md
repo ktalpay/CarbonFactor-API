@@ -74,6 +74,16 @@ minimal HTTP surface for carbon factor lookup:
 Application failures are returned as deterministic HTTP responses using the
 shared `ApiError` contract: `not_found` maps to `404`, and `invalid_query`
 maps to `400`.
+
+The current endpoint parity coverage is wire-format focused:
+
+- list responses serialize as `factors` plus `total`
+- detail responses serialize as `factor`
+- factor objects preserve `factor_value` and `factor_unit` snake_case names
+- search accepts only `category`, `activity`, `region`, and `year`
+- unsupported filters, non-positive years, and non-integer `year` values
+  return deterministic `invalid_query` envelopes
+- missing factors return deterministic `not_found` envelopes with `details.id`
 ## Carbon Factor Contract Baseline
 
 The .NET baseline preserves the current Python public field expectations while
