@@ -1,15 +1,19 @@
 using System.Net;
 using System.Text.Json;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace CarbonOps.Api.Tests;
 
 public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
 {
     private readonly HttpClient client;
+    private readonly WebApplicationFactory<Program> factory;
 
     public CarbonFactorEndpointsTests(WebApplicationFactory<Program> factory)
     {
+        this.factory = factory;
         client = factory.CreateClient();
     }
 
@@ -134,6 +138,32 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
             payload.GetProperty("details").GetProperty("reason").GetString());
     }
 
+    [Fact]
+    public void CurrentCarbonFactorRoutesExposeEndpointExamples()
+    {
+        var endpoints = factory.Services
+            .GetRequiredService<EndpointDataSource>()
+            .Endpoints
+            .OfType<RouteEndpoint>()
+            .Where(endpoint => endpoint.RoutePattern.RawText is not null)
+            .ToDictionary(endpoint => endpoint.RoutePattern.RawText!, StringComparer.Ordinal);
+
+        AssertRouteExamples(
+            endpoints,
+            "/carbon-factors/",
+            CarbonFactorEndpointExamples.ListFactorsSuccess);
+        AssertRouteExamples(
+            endpoints,
+            "/carbon-factors/search",
+            CarbonFactorEndpointExamples.SearchFactorsSuccess,
+            CarbonFactorEndpointExamples.SearchFactorsInvalidQuery);
+        AssertRouteExamples(
+            endpoints,
+            "/carbon-factors/{factorId}",
+            CarbonFactorEndpointExamples.GetFactorByIdSuccess,
+            CarbonFactorEndpointExamples.GetFactorByIdNotFound);
+    }
+
     private static void AssertFactorShape(JsonElement factor)
     {
         AssertObjectPropertyNames(
@@ -154,6 +184,22 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
         AssertObjectPropertyNames(payload, "code", "details", "message");
         Assert.Equal(code, payload.GetProperty("code").GetString());
         Assert.Equal(message, payload.GetProperty("message").GetString());
+    }
+
+    private static void AssertRouteExamples(
+        IReadOnlyDictionary<string, RouteEndpoint> endpoints,
+        string routePattern,
+        params EndpointExample[] expectedExamples)
+    {
+        var endpoint = Assert.Contains(routePattern, endpoints);
+        var actualExamples = endpoint.Metadata.OfType<EndpointExample>().ToArray();
+
+        Assert.Equal(expectedExamples.Length, actualExamples.Length);
+
+        for (var index = 0; index < expectedExamples.Length; index++)
+        {
+            Assert.Equal(expectedExamples[index], actualExamples[index]);
+        }
     }
 
     private static void AssertObjectPropertyNames(JsonElement payload, params string[] expectedPropertyNames)
