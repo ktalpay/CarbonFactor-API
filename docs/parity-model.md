@@ -62,3 +62,18 @@ extra filters. The .NET path now uses a deterministic in-memory repository
 adapter for local composition and now exposes equivalent minimal HTTP lookup
 routes for list, get-by-id, and search behavior. Persistence, CRUD behavior,
 and cross-language test infrastructure remain out of scope.
+
+Current parity evidence for the carbon factor endpoints is intentionally
+contract-focused:
+
+- `GET /carbon-factors` returns `{ "factors": [...], "total": <int> }`
+- `GET /carbon-factors/{factorId}` returns `{ "factor": {...} }`
+- `GET /carbon-factors/search` accepts only `category`, `activity`, `region`,
+  and `year` exact-match filters
+- factor payload fields remain `id`, `source`, `category`, `activity`,
+  `factor_value`, `factor_unit`, `region`, `year`, and `notes`
+- deterministic error envelopes remain
+  `{ "code": <string>, "message": <string>, "details": {...} }`
+- `not_found` errors carry `details.id`
+- `invalid_query` errors carry `details.reason` for unsupported filters,
+  non-positive years, and non-integer `year` values
