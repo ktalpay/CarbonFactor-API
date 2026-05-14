@@ -12,6 +12,17 @@ public sealed class FactorContractTests
 
         var payload = JsonSerializer.SerializeToElement(factor);
 
+        AssertObjectPropertyNames(
+            payload,
+            "activity",
+            "category",
+            "factor_unit",
+            "factor_value",
+            "id",
+            "notes",
+            "region",
+            "source",
+            "year");
         Assert.Equal("elec-tr-2024", payload.GetProperty("id").GetString());
         Assert.Equal("synthetic", payload.GetProperty("source").GetString());
         Assert.Equal("electricity", payload.GetProperty("category").GetString());
@@ -34,6 +45,7 @@ public sealed class FactorContractTests
 
         var payload = JsonSerializer.SerializeToElement(query);
 
+        AssertObjectPropertyNames(payload, "activity", "category", "region", "year");
         Assert.Equal("electricity", payload.GetProperty("category").GetString());
         Assert.Equal("grid electricity", payload.GetProperty("activity").GetString());
         Assert.Equal("TR", payload.GetProperty("region").GetString());
@@ -48,6 +60,7 @@ public sealed class FactorContractTests
 
         var payload = JsonSerializer.SerializeToElement(response);
 
+        AssertObjectPropertyNames(payload, "factors", "total");
         Assert.Equal(1, payload.GetProperty("total").GetInt32());
         Assert.Equal("elec-tr-2024", payload.GetProperty("factors")[0].GetProperty("id").GetString());
     }
@@ -60,7 +73,21 @@ public sealed class FactorContractTests
 
         var payload = JsonSerializer.SerializeToElement(response);
 
+        AssertObjectPropertyNames(payload, "factor");
         Assert.Equal("elec-tr-2024", payload.GetProperty("factor").GetProperty("id").GetString());
+    }
+
+    private static void AssertObjectPropertyNames(JsonElement payload, params string[] expectedPropertyNames)
+    {
+        var actualPropertyNames = payload
+            .EnumerateObject()
+            .Select(property => property.Name)
+            .OrderBy(name => name, StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.Equal(
+            expectedPropertyNames.OrderBy(name => name, StringComparer.Ordinal).ToArray(),
+            actualPropertyNames);
     }
 
     private static FactorDto CreateFactor()
