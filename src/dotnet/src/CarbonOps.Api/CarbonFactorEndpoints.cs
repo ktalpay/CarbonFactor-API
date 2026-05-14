@@ -11,13 +11,20 @@ internal static class CarbonFactorEndpoints
         var group = endpoints.MapGroup("/carbon-factors");
 
         group.MapGet("/", (CarbonFactorUseCases useCases) =>
-            TypedResults.Ok(useCases.ListCarbonFactors()));
+            TypedResults.Ok(useCases.ListCarbonFactors()))
+            .WithMetadata(CarbonFactorEndpointExamples.ListFactorsSuccess);
 
         group.MapGet("/search", (HttpRequest request, CarbonFactorUseCases useCases) =>
-            SearchCarbonFactors(request, useCases));
+            SearchCarbonFactors(request, useCases))
+            .WithMetadata(
+                CarbonFactorEndpointExamples.SearchFactorsSuccess,
+                CarbonFactorEndpointExamples.SearchFactorsInvalidQuery);
 
         group.MapGet("/{factorId}", (string factorId, CarbonFactorUseCases useCases) =>
-            useCases.GetCarbonFactorById(factorId).ToHttpResult());
+            useCases.GetCarbonFactorById(factorId).ToHttpResult())
+            .WithMetadata(
+                CarbonFactorEndpointExamples.GetFactorByIdSuccess,
+                CarbonFactorEndpointExamples.GetFactorByIdNotFound);
 
         return endpoints;
     }
