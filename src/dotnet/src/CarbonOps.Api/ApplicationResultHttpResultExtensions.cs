@@ -5,23 +5,23 @@ namespace CarbonOps.Api;
 
 internal static class ApplicationResultHttpResultExtensions
 {
-    public static IResult ToHttpResult<T>(this ApplicationResult<T> result)
+    public static T GetValueOrThrow<T>(this ApplicationResult<T> result)
     {
         if (result.IsSuccess)
         {
-            return TypedResults.Ok(result.Value);
+            return result.Value!;
         }
 
-        return result.Error!.ToHttpResult();
+        throw new ApiErrorException(result.Error!);
     }
 
-    public static IResult ToHttpResult(this ApiError error)
+    public static void ThrowIfError(this ApiError? error)
     {
-        return error.Code switch
+        if (error is null)
         {
-            "not_found" => TypedResults.NotFound(error),
-            "invalid_query" => TypedResults.BadRequest(error),
-            _ => TypedResults.BadRequest(error)
-        };
+            return;
+        }
+
+        throw new ApiErrorException(error);
     }
 }
