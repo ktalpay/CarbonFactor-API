@@ -7,20 +7,28 @@ namespace CarbonOps.Api;
 
 internal static class CarbonFactorEndpoints
 {
-    private static readonly string[] SupportedFilters =
+    private static readonly string[] SupportedSearchFilters =
     [
         "category",
         "activity",
         "region",
-        "year"
+        "year",
+        "offset",
+        "limit"
+    ];
+
+    private static readonly string[] SupportedListFilters =
+    [
+        "offset",
+        "limit"
     ];
 
     public static IEndpointRouteBuilder MapCarbonFactorEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/carbon-factors");
 
-        group.MapGet("/", (CarbonFactorUseCases useCases) =>
-            TypedResults.Ok(useCases.ListCarbonFactors()))
+        group.MapGet("/", (HttpRequest request, CarbonFactorUseCases useCases) =>
+            ListCarbonFactors(request, useCases))
             .WithMetadata(CarbonFactorEndpointExamples.ListFactorsSuccess);
 
         group.MapGet("/search", (HttpRequest request, CarbonFactorUseCases useCases) =>
@@ -38,6 +46,16 @@ internal static class CarbonFactorEndpoints
         return endpoints;
     }
 
+    private static IResult ListCarbonFactors(HttpRequest request, CarbonFactorUseCases useCases)
+    {
+        var pagination = TryBuildPaginationQuery(request.Query, SupportedListFilters).GetValueOrThrow();
+
+        return TypedResults.Ok(
+            useCases
+                .ListCarbonFactors(pagination.Query, pagination.RequestedFilterNames)
+                .GetValueOrThrow());
+    }
+
     private static IResult GetCarbonFactorById(string factorId, CarbonFactorUseCases useCases)
     {
         ValidateFactorId(factorId).ThrowIfError();
@@ -51,14 +69,17 @@ internal static class CarbonFactorEndpoints
 
         return TypedResults.Ok(
             useCases
-                .SearchCarbonFactors(queryRequest.Query, queryRequest.RequestedFilterNames)
+                .SearchCarbonFactors(
+                    queryRequest.Query,
+                    queryRequest.Pagination,
+                    queryRequest.RequestedFilterNames)
                 .GetValueOrThrow());
     }
 
     private static ApplicationResult<FactorSearchRequest> TryBuildFactorQuery(IQueryCollection queryCollection)
     {
         var unsupportedFilters = queryCollection.Keys
-            .Where(key => !SupportedFilters.Contains(key, StringComparer.Ordinal))
+            .Where(key => !SupportedSearchFilters.Contains(key, StringComparer.Ordinal))
             .OrderBy(key => key, StringComparer.Ordinal)
             .ToArray();
 
@@ -88,14 +109,56 @@ internal static class CarbonFactorEndpoints
             return ApplicationResult<FactorSearchRequest>.Failure(yearError!);
         }
 
+        if (!TryParseOptionalInt(queryCollection, "offset", out var offset, out var offsetError))
+        {
+            return ApplicationResult<FactorSearchRequest>.Failure(offsetError!);
+        }
+
+        if (!TryParseOptionalInt(queryCollection, "limit", out var limit, out var limitError))
+        {
+            return ApplicationResult<FactorSearchRequest>.Failure(limitError!);
+        }
+
         var query = new FactorQuery(
             Category: category,
             Activity: activity,
             Region: region,
             Year: year);
+        var pagination = new FactorPaginationQuery(Offset: offset, Limit: limit);
 
-        var request = new FactorSearchRequest(query, queryCollection.Keys.ToArray());
+        var request = new FactorSearchRequest(query, pagination, queryCollection.Keys.ToArray());
         return ApplicationResult<FactorSearchRequest>.Success(request);
+    }
+
+    private static ApplicationResult<FactorListRequest> TryBuildPaginationQuery(
+        IQueryCollection queryCollection,
+        IReadOnlyCollection<string> supportedFilters)
+    {
+        var unsupportedFilters = queryCollection.Keys
+            .Where(key => !supportedFilters.Contains(key, StringComparer.Ordinal))
+            .OrderBy(key => key, StringComparer.Ordinal)
+            .ToArray();
+
+        if (unsupportedFilters.Length > 0)
+        {
+            return ApplicationResult<FactorListRequest>.Failure(
+                ApiError.InvalidQuery($"unsupported filters: {string.Join(", ", unsupportedFilters)}"));
+        }
+
+        if (!TryParseOptionalInt(queryCollection, "offset", out var offset, out var offsetError))
+        {
+            return ApplicationResult<FactorListRequest>.Failure(offsetError!);
+        }
+
+        if (!TryParseOptionalInt(queryCollection, "limit", out var limit, out var limitError))
+        {
+            return ApplicationResult<FactorListRequest>.Failure(limitError!);
+        }
+
+        return ApplicationResult<FactorListRequest>.Success(
+            new FactorListRequest(
+                new FactorPaginationQuery(Offset: offset, Limit: limit),
+                queryCollection.Keys.ToArray()));
     }
 
     private static ApiError? ValidateFactorId(string factorId)
@@ -177,5 +240,12 @@ internal static class CarbonFactorEndpoints
         return values.Count == 0 || string.IsNullOrWhiteSpace(values[0]);
     }
 
-    private sealed record FactorSearchRequest(FactorQuery Query, IReadOnlyCollection<string> RequestedFilterNames);
+    private sealed record FactorListRequest(
+        FactorPaginationQuery Query,
+        IReadOnlyCollection<string> RequestedFilterNames);
+
+    private sealed record FactorSearchRequest(
+        FactorQuery Query,
+        FactorPaginationQuery Pagination,
+        IReadOnlyCollection<string> RequestedFilterNames);
 }

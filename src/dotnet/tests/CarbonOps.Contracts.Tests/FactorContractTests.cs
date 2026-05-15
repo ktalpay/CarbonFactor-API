@@ -53,6 +53,18 @@ public sealed class FactorContractTests
     }
 
     [Fact]
+    public void FactorPaginationQueryUsesPaginationFields()
+    {
+        var query = new FactorPaginationQuery(Offset: 5, Limit: 10);
+
+        var payload = JsonSerializer.SerializeToElement(query);
+
+        AssertObjectPropertyNames(payload, "limit", "offset");
+        Assert.Equal(5, payload.GetProperty("offset").GetInt32());
+        Assert.Equal(10, payload.GetProperty("limit").GetInt32());
+    }
+
+    [Fact]
     public void FactorListResponseCarriesFactorsAndTotal()
     {
         var factor = CreateFactor();
