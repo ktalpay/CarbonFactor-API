@@ -191,6 +191,14 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
     }
 
     [Fact]
+    public async Task ErrorResponsesRemainJsonWhenMappedByMiddleware()
+    {
+        var response = await client.GetAsync("/carbon-factors/missing-factor");
+
+        Assert.Equal("application/json; charset=utf-8", response.Content.Headers.ContentType?.ToString());
+    }
+
+    [Fact]
     public void CurrentCarbonFactorRoutesExposeEndpointExamples()
     {
         var endpoints = factory.Services

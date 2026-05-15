@@ -40,26 +40,19 @@ internal static class CarbonFactorEndpoints
 
     private static IResult GetCarbonFactorById(string factorId, CarbonFactorUseCases useCases)
     {
-        var validationError = ValidateFactorId(factorId);
-        if (validationError is not null)
-        {
-            return validationError.ToHttpResult();
-        }
+        ValidateFactorId(factorId).ThrowIfError();
 
-        return useCases.GetCarbonFactorById(factorId).ToHttpResult();
+        return TypedResults.Ok(useCases.GetCarbonFactorById(factorId).GetValueOrThrow());
     }
 
     private static IResult SearchCarbonFactors(HttpRequest request, CarbonFactorUseCases useCases)
     {
-        var queryResult = TryBuildFactorQuery(request.Query);
-        if (!queryResult.IsSuccess)
-        {
-            return queryResult.ToHttpResult();
-        }
+        var queryRequest = TryBuildFactorQuery(request.Query).GetValueOrThrow();
 
-        return useCases
-            .SearchCarbonFactors(queryResult.Value!.Query, queryResult.Value.RequestedFilterNames)
-            .ToHttpResult();
+        return TypedResults.Ok(
+            useCases
+                .SearchCarbonFactors(queryRequest.Query, queryRequest.RequestedFilterNames)
+                .GetValueOrThrow());
     }
 
     private static ApplicationResult<FactorSearchRequest> TryBuildFactorQuery(IQueryCollection queryCollection)

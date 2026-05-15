@@ -5,6 +5,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddCarbonFactorServices();
 var app = builder.Build();
 
+app.UseMiddleware<ApiErrorMappingMiddleware>();
+
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapCarbonFactorEndpoints();
 
