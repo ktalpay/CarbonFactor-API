@@ -1,11 +1,20 @@
 using System.Globalization;
 using CarbonOps.Application.Factors;
 using CarbonOps.Contracts;
+using Microsoft.Extensions.Primitives;
 
 namespace CarbonOps.Api;
 
 internal static class CarbonFactorEndpoints
 {
+    private static readonly string[] SupportedFilters =
+    [
+        "category",
+        "activity",
+        "region",
+        "year"
+    ];
+
     public static IEndpointRouteBuilder MapCarbonFactorEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/carbon-factors");
@@ -21,12 +30,23 @@ internal static class CarbonFactorEndpoints
                 CarbonFactorEndpointExamples.SearchFactorsInvalidQuery);
 
         group.MapGet("/{factorId}", (string factorId, CarbonFactorUseCases useCases) =>
-            useCases.GetCarbonFactorById(factorId).ToHttpResult())
+            GetCarbonFactorById(factorId, useCases))
             .WithMetadata(
                 CarbonFactorEndpointExamples.GetFactorByIdSuccess,
                 CarbonFactorEndpointExamples.GetFactorByIdNotFound);
 
         return endpoints;
+    }
+
+    private static IResult GetCarbonFactorById(string factorId, CarbonFactorUseCases useCases)
+    {
+        var validationError = ValidateFactorId(factorId);
+        if (validationError is not null)
+        {
+            return validationError.ToHttpResult();
+        }
+
+        return useCases.GetCarbonFactorById(factorId).ToHttpResult();
     }
 
     private static IResult SearchCarbonFactors(HttpRequest request, CarbonFactorUseCases useCases)
@@ -44,19 +64,60 @@ internal static class CarbonFactorEndpoints
 
     private static ApplicationResult<FactorSearchRequest> TryBuildFactorQuery(IQueryCollection queryCollection)
     {
-        if (!TryParseOptionalInt(queryCollection, "year", out var year, out var parseError))
+        var unsupportedFilters = queryCollection.Keys
+            .Where(key => !SupportedFilters.Contains(key, StringComparer.Ordinal))
+            .OrderBy(key => key, StringComparer.Ordinal)
+            .ToArray();
+
+        if (unsupportedFilters.Length > 0)
         {
-            return ApplicationResult<FactorSearchRequest>.Failure(parseError!);
+            return ApplicationResult<FactorSearchRequest>.Failure(
+                ApiError.InvalidQuery($"unsupported filters: {string.Join(", ", unsupportedFilters)}"));
+        }
+
+        if (!TryReadOptionalString(queryCollection, "category", out var category, out var categoryError))
+        {
+            return ApplicationResult<FactorSearchRequest>.Failure(categoryError!);
+        }
+
+        if (!TryReadOptionalString(queryCollection, "activity", out var activity, out var activityError))
+        {
+            return ApplicationResult<FactorSearchRequest>.Failure(activityError!);
+        }
+
+        if (!TryReadOptionalString(queryCollection, "region", out var region, out var regionError))
+        {
+            return ApplicationResult<FactorSearchRequest>.Failure(regionError!);
+        }
+
+        if (!TryParseOptionalInt(queryCollection, "year", out var year, out var yearError))
+        {
+            return ApplicationResult<FactorSearchRequest>.Failure(yearError!);
         }
 
         var query = new FactorQuery(
-            Category: ReadOptionalValue(queryCollection, "category"),
-            Activity: ReadOptionalValue(queryCollection, "activity"),
-            Region: ReadOptionalValue(queryCollection, "region"),
+            Category: category,
+            Activity: activity,
+            Region: region,
             Year: year);
 
         var request = new FactorSearchRequest(query, queryCollection.Keys.ToArray());
         return ApplicationResult<FactorSearchRequest>.Success(request);
+    }
+
+    private static ApiError? ValidateFactorId(string factorId)
+    {
+        if (string.IsNullOrWhiteSpace(factorId))
+        {
+            return ApiError.InvalidQuery("factorId is required");
+        }
+
+        if (factorId.Any(char.IsWhiteSpace))
+        {
+            return ApiError.InvalidQuery("factorId must not contain whitespace");
+        }
+
+        return null;
     }
 
     private static bool TryParseOptionalInt(
@@ -68,7 +129,11 @@ internal static class CarbonFactorEndpoints
         value = null;
         error = null;
 
-        var rawValue = ReadOptionalValue(queryCollection, key);
+        if (!TryReadOptionalString(queryCollection, key, out var rawValue, out error))
+        {
+            return false;
+        }
+
         if (rawValue is null)
         {
             return true;
@@ -84,15 +149,39 @@ internal static class CarbonFactorEndpoints
         return true;
     }
 
-    private static string? ReadOptionalValue(IQueryCollection queryCollection, string key)
+    private static bool TryReadOptionalString(
+        IQueryCollection queryCollection,
+        string key,
+        out string? value,
+        out ApiError? error)
     {
+        value = null;
+        error = null;
+
         if (!queryCollection.TryGetValue(key, out var values))
         {
-            return null;
+            return true;
         }
 
-        var value = values.ToString();
-        return string.IsNullOrWhiteSpace(value) ? null : value;
+        if (values.Count > 1)
+        {
+            error = ApiError.InvalidQuery($"{key} must be provided once");
+            return false;
+        }
+
+        if (IsMissingValue(values))
+        {
+            error = ApiError.InvalidQuery($"{key} must not be empty");
+            return false;
+        }
+
+        value = values[0]!;
+        return true;
+    }
+
+    private static bool IsMissingValue(StringValues values)
+    {
+        return values.Count == 0 || string.IsNullOrWhiteSpace(values[0]);
     }
 
     private sealed record FactorSearchRequest(FactorQuery Query, IReadOnlyCollection<string> RequestedFilterNames);

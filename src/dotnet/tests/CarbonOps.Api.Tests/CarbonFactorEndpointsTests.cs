@@ -69,6 +69,32 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
     }
 
     [Fact]
+    public async Task GetCarbonFactorByIdReturnsInvalidQueryForWhitespaceFactorId()
+    {
+        var response = await client.GetAsync("/carbon-factors/%20%20");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+
+        AssertErrorShape(payload, "invalid_query", "Invalid query");
+        Assert.Equal("factorId is required", payload.GetProperty("details").GetProperty("reason").GetString());
+    }
+
+    [Fact]
+    public async Task GetCarbonFactorByIdReturnsInvalidQueryForEmbeddedWhitespace()
+    {
+        var response = await client.GetAsync("/carbon-factors/f-0%2001");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+
+        AssertErrorShape(payload, "invalid_query", "Invalid query");
+        Assert.Equal("factorId must not contain whitespace", payload.GetProperty("details").GetProperty("reason").GetString());
+    }
+
+    [Fact]
     public async Task SearchCarbonFactorsReturnsMatchingFactorsForSupportedFilters()
     {
         var response = await client.GetAsync(
@@ -121,6 +147,32 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
 
         AssertErrorShape(payload, "invalid_query", "Invalid query");
         Assert.Equal("year must be an integer", payload.GetProperty("details").GetProperty("reason").GetString());
+    }
+
+    [Fact]
+    public async Task SearchCarbonFactorsReturnsInvalidQueryForEmptyStringFilters()
+    {
+        var response = await client.GetAsync("/carbon-factors/search?category=");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+
+        AssertErrorShape(payload, "invalid_query", "Invalid query");
+        Assert.Equal("category must not be empty", payload.GetProperty("details").GetProperty("reason").GetString());
+    }
+
+    [Fact]
+    public async Task SearchCarbonFactorsReturnsInvalidQueryForDuplicateFilterValues()
+    {
+        var response = await client.GetAsync("/carbon-factors/search?region=TR&region=US");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+
+        AssertErrorShape(payload, "invalid_query", "Invalid query");
+        Assert.Equal("region must be provided once", payload.GetProperty("details").GetProperty("reason").GetString());
     }
 
     [Fact]
