@@ -199,6 +199,18 @@ slugify() {
     sed -E 's/[][]//g; s/[^a-z0-9]+/-/g; s/-+/-/g; s/^-+//; s/-+$//'
 }
 
+task_branch_name() {
+  local task_id="$1"
+  local title="$2"
+
+  printf 'feature/%s-%s' "$(printf '%s' "$task_id" | slugify)" "$(printf '%s' "$title" | slugify)"
+}
+
+non_generated_worktree_status() {
+  git status --short --untracked-files=all |
+    grep -Ev '^[? MADRCU]+[[:space:]]+\.agent-handoff(/|$)' || true
+}
+
 find_prepared_prompt_path() {
   local task_id="$1"
   local downloads_root="$CARBONOPS_API_REPO_ROOT/.agent-handoff/downloads"
@@ -442,6 +454,21 @@ if [ "$RUN_CODEX_MODE" = "true" ]; then
     exit 1
   fi
 
+  DIRTY_NON_GENERATED="$(non_generated_worktree_status)"
+  if [ -n "$DIRTY_NON_GENERATED" ]; then
+    printf 'error: refusing to run Codex because non-generated working tree changes already exist:\n%s\n' "$DIRTY_NON_GENERATED" >&2
+    exit 1
+  fi
+
+  git fetch origin develop
+
+  CURRENT_BRANCH="$(git branch --show-current)"
+  TASK_BRANCH="$(task_branch_name "$SELECTED_TASK_ID" "$SELECTED_TITLE")"
+
+  if [ "$CURRENT_BRANCH" != "$TASK_BRANCH" ]; then
+    git checkout -B "$TASK_BRANCH" origin/develop
+  fi
+
   LOG_ROOT="$CARBONOPS_API_REPO_ROOT/.agent-handoff/logs"
   mkdir -p "$LOG_ROOT"
   TIMESTAMP="$(date +%Y%m%d-%H%M%S)"
@@ -504,19 +531,33 @@ if [ "$OPEN_PR_MODE" = "true" ]; then
   fail_if_generated_artifacts_are_staged_or_dirty
 
   if [ -z "$(git status --short --untracked-files=all)" ]; then
-    printf 'error: refusing to open PR because the working tree has no changes\n' >&2
+    printf 'error: refusing to open PR because the worker repo root has no changes; Codex may have written output to a separate temporary clone\n' >&2
     exit 1
   fi
 
+  git fetch origin develop
+
   CURRENT_BRANCH="$(git branch --show-current)"
+  EXPECTED_BRANCH="$(task_branch_name "$SELECTED_TASK_ID" "$SELECTED_TITLE")"
+
   if [ "$CURRENT_BRANCH" = "main" ] || [ "$CURRENT_BRANCH" = "develop" ]; then
     printf 'error: refusing to commit directly on protected branch %s\n' "$CURRENT_BRANCH" >&2
     exit 1
   fi
 
   if [ -z "$CURRENT_BRANCH" ]; then
-    CURRENT_BRANCH="feature/$(printf '%s' "$SELECTED_TASK_ID" | slugify)-$(printf '%s' "$SELECTED_TITLE" | slugify)"
-    git checkout -b "$CURRENT_BRANCH"
+    printf 'error: refusing to open PR from detached HEAD; run --run-codex first so the task branch is created from origin/develop\n' >&2
+    exit 1
+  fi
+
+  if [ "$CURRENT_BRANCH" != "$EXPECTED_BRANCH" ]; then
+    printf 'error: refusing to open PR from branch %s; expected %s\n' "$CURRENT_BRANCH" "$EXPECTED_BRANCH" >&2
+    exit 1
+  fi
+
+  if ! git merge-base --is-ancestor origin/develop HEAD; then
+    printf 'error: refusing to open PR because branch %s is not based on current origin/develop\n' "$CURRENT_BRANCH" >&2
+    exit 1
   fi
 
   git add -A
