@@ -199,6 +199,61 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
     }
 
     [Fact]
+    public async Task HealthEndpointReturnsDeterministicPayload()
+    {
+        var response = await client.GetAsync("/health");
+
+        response.EnsureSuccessStatusCode();
+
+        var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+
+        AssertObjectPropertyNames(payload, "status");
+        Assert.Equal("ok", payload.GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public async Task LivenessEndpointReturnsDeterministicPayload()
+    {
+        var response = await client.GetAsync("/health/live");
+
+        response.EnsureSuccessStatusCode();
+
+        var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+
+        AssertObjectPropertyNames(payload, "check", "status");
+        Assert.Equal("liveness", payload.GetProperty("check").GetString());
+        Assert.Equal("ok", payload.GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public async Task ReadinessEndpointReturnsDeterministicPayload()
+    {
+        var response = await client.GetAsync("/health/ready");
+
+        response.EnsureSuccessStatusCode();
+
+        var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+
+        AssertObjectPropertyNames(payload, "check", "status");
+        Assert.Equal("readiness", payload.GetProperty("check").GetString());
+        Assert.Equal("ok", payload.GetProperty("status").GetString());
+    }
+
+    [Fact]
+    public async Task VersionEndpointReturnsDeterministicPayload()
+    {
+        var response = await client.GetAsync("/version");
+
+        response.EnsureSuccessStatusCode();
+
+        var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+
+        AssertObjectPropertyNames(payload, "name", "version");
+        Assert.Equal("CarbonOps API", payload.GetProperty("name").GetString());
+        Assert.Equal("0.1.0", payload.GetProperty("version").GetString());
+    }
+
+    [Fact]
     public void CurrentCarbonFactorRoutesExposeEndpointExamples()
     {
         var endpoints = factory.Services
@@ -208,6 +263,22 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
             .Where(endpoint => endpoint.RoutePattern.RawText is not null)
             .ToDictionary(endpoint => endpoint.RoutePattern.RawText!, StringComparer.Ordinal);
 
+        AssertRouteExamples(
+            endpoints,
+            "/health",
+            OperationalEndpointExamples.HealthSuccess);
+        AssertRouteExamples(
+            endpoints,
+            "/health/live",
+            OperationalEndpointExamples.LivenessSuccess);
+        AssertRouteExamples(
+            endpoints,
+            "/health/ready",
+            OperationalEndpointExamples.ReadinessSuccess);
+        AssertRouteExamples(
+            endpoints,
+            "/version",
+            OperationalEndpointExamples.VersionSuccess);
         AssertRouteExamples(
             endpoints,
             "/carbon-factors/",
