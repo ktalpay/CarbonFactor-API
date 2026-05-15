@@ -5,12 +5,20 @@ namespace CarbonOps.Application.Factors;
 
 public sealed class CarbonFactorUseCases
 {
-    private static readonly HashSet<string> AllowedFilters = new(StringComparer.Ordinal)
+    private static readonly HashSet<string> AllowedSearchFilters = new(StringComparer.Ordinal)
     {
         "category",
         "activity",
         "region",
-        "year"
+        "year",
+        "offset",
+        "limit"
+    };
+
+    private static readonly HashSet<string> AllowedListFilters = new(StringComparer.Ordinal)
+    {
+        "offset",
+        "limit"
     };
 
     private readonly ICarbonFactorRepository repository;
@@ -22,13 +30,28 @@ public sealed class CarbonFactorUseCases
 
     public FactorListResponse ListCarbonFactors()
     {
-        var factors = repository
-            .ListCarbonFactors()
-            .OrderBy(factor => factor.Id, StringComparer.Ordinal)
-            .Select(CarbonFactorMapper.ToDto)
-            .ToList();
+        return BuildFactorListResponse(repository.ListCarbonFactors(), new FactorPaginationQuery());
+    }
 
-        return new FactorListResponse(factors, factors.Count);
+    public ApplicationResult<FactorListResponse> ListCarbonFactors(
+        FactorPaginationQuery pagination,
+        IReadOnlyCollection<string>? requestedFilterNames = null)
+    {
+        var unsupportedFilters = UnsupportedFilters(requestedFilterNames, AllowedListFilters);
+        if (unsupportedFilters.Count > 0)
+        {
+            return ApplicationResult<FactorListResponse>.Failure(
+                ApiError.InvalidQuery($"unsupported filters: {string.Join(", ", unsupportedFilters)}"));
+        }
+
+        var paginationError = ValidatePagination(pagination);
+        if (paginationError is not null)
+        {
+            return ApplicationResult<FactorListResponse>.Failure(paginationError);
+        }
+
+        return ApplicationResult<FactorListResponse>.Success(
+            BuildFactorListResponse(repository.ListCarbonFactors(), pagination));
     }
 
     public ApplicationResult<FactorDetailResponse> GetCarbonFactorById(string factorId)
@@ -51,6 +74,7 @@ public sealed class CarbonFactorUseCases
 
     public ApplicationResult<FactorListResponse> SearchCarbonFactors(
         FactorQuery query,
+        FactorPaginationQuery? pagination = null,
         IReadOnlyCollection<string>? requestedFilterNames = null)
     {
         if (query.Year is <= 0)
@@ -58,11 +82,19 @@ public sealed class CarbonFactorUseCases
             return ApplicationResult<FactorListResponse>.Failure(ApiError.InvalidQuery("year must be positive"));
         }
 
-        var unsupportedFilters = UnsupportedFilters(requestedFilterNames);
+        var unsupportedFilters = UnsupportedFilters(requestedFilterNames, AllowedSearchFilters);
         if (unsupportedFilters.Count > 0)
         {
             return ApplicationResult<FactorListResponse>.Failure(
                 ApiError.InvalidQuery($"unsupported filters: {string.Join(", ", unsupportedFilters)}"));
+        }
+
+        pagination ??= new FactorPaginationQuery();
+
+        var paginationError = ValidatePagination(pagination);
+        if (paginationError is not null)
+        {
+            return ApplicationResult<FactorListResponse>.Failure(paginationError);
         }
 
         IEnumerable<CarbonFactor> factors = repository.ListCarbonFactors();
@@ -87,16 +119,45 @@ public sealed class CarbonFactorUseCases
             factors = factors.Where(factor => factor.Year == query.Year);
         }
 
-        var factorDtos = factors
+        return ApplicationResult<FactorListResponse>.Success(
+            BuildFactorListResponse(factors, pagination));
+    }
+
+    private static FactorListResponse BuildFactorListResponse(
+        IEnumerable<CarbonFactor> factors,
+        FactorPaginationQuery pagination)
+    {
+        var orderedFactors = factors
             .OrderBy(factor => factor.Id, StringComparer.Ordinal)
             .Select(CarbonFactorMapper.ToDto)
             .ToList();
 
-        return ApplicationResult<FactorListResponse>.Success(
-            new FactorListResponse(factorDtos, factorDtos.Count));
+        var pagedFactors = orderedFactors
+            .Skip(pagination.Offset ?? 0)
+            .Take(pagination.Limit ?? orderedFactors.Count)
+            .ToList();
+
+        return new FactorListResponse(pagedFactors, orderedFactors.Count);
     }
 
-    private static IReadOnlyList<string> UnsupportedFilters(IReadOnlyCollection<string>? requestedFilterNames)
+    private static ApiError? ValidatePagination(FactorPaginationQuery pagination)
+    {
+        if (pagination.Offset is < 0)
+        {
+            return ApiError.InvalidQuery("offset must be zero or positive");
+        }
+
+        if (pagination.Limit is <= 0)
+        {
+            return ApiError.InvalidQuery("limit must be positive");
+        }
+
+        return null;
+    }
+
+    private static IReadOnlyList<string> UnsupportedFilters(
+        IReadOnlyCollection<string>? requestedFilterNames,
+        HashSet<string> allowedFilters)
     {
         if (requestedFilterNames is null || requestedFilterNames.Count == 0)
         {
@@ -104,7 +165,7 @@ public sealed class CarbonFactorUseCases
         }
 
         return requestedFilterNames
-            .Where(filter => !AllowedFilters.Contains(filter))
+            .Where(filter => !allowedFilters.Contains(filter))
             .Order(StringComparer.Ordinal)
             .ToList();
     }

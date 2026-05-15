@@ -18,6 +18,45 @@ public sealed class CarbonFactorUseCasesTests
     }
 
     [Fact]
+    public void ListCarbonFactorsAppliesOffsetAndLimit()
+    {
+        var useCases = new CarbonFactorUseCases(new FakeCarbonFactorRepository(SampleFactors()));
+
+        var result = useCases.ListCarbonFactors(
+            new FactorPaginationQuery(Offset: 1, Limit: 1),
+            ["offset", "limit"]);
+
+        Assert.True(result.IsSuccess);
+        Assert.Null(result.Error);
+        Assert.Equal(3, result.Value!.Total);
+        Assert.Equal(["f-002"], result.Value.Factors.Select(factor => factor.Id));
+    }
+
+    [Fact]
+    public void ListCarbonFactorsReturnsInvalidQueryForNegativeOffset()
+    {
+        var useCases = new CarbonFactorUseCases(new FakeCarbonFactorRepository(SampleFactors()));
+
+        var result = useCases.ListCarbonFactors(new FactorPaginationQuery(Offset: -1), ["offset"]);
+
+        Assert.False(result.IsSuccess);
+        Assert.Null(result.Value);
+        Assert.Equal("offset must be zero or positive", result.Error!.Details["reason"]);
+    }
+
+    [Fact]
+    public void ListCarbonFactorsReturnsInvalidQueryForUnsupportedFilters()
+    {
+        var useCases = new CarbonFactorUseCases(new FakeCarbonFactorRepository(SampleFactors()));
+
+        var result = useCases.ListCarbonFactors(new FactorPaginationQuery(), ["limit", "category"]);
+
+        Assert.False(result.IsSuccess);
+        Assert.Null(result.Value);
+        Assert.Equal("unsupported filters: category", result.Error!.Details["reason"]);
+    }
+
+    [Fact]
     public void GetCarbonFactorByIdReturnsMatchingFactor()
     {
         var useCases = new CarbonFactorUseCases(new FakeCarbonFactorRepository(SampleFactors()));
@@ -79,6 +118,22 @@ public sealed class CarbonFactorUseCasesTests
     }
 
     [Fact]
+    public void SearchCarbonFactorsAppliesPaginationAfterFiltering()
+    {
+        var useCases = new CarbonFactorUseCases(new FakeCarbonFactorRepository(SampleFactors()));
+
+        var result = useCases.SearchCarbonFactors(
+            new FactorQuery(Year: 2024),
+            new FactorPaginationQuery(Offset: 1, Limit: 1),
+            ["year", "offset", "limit"]);
+
+        Assert.True(result.IsSuccess);
+        Assert.Null(result.Error);
+        Assert.Equal(2, result.Value!.Total);
+        Assert.Equal(["f-002"], result.Value.Factors.Select(factor => factor.Id));
+    }
+
+    [Fact]
     public void SearchCarbonFactorsReturnsInvalidQueryForNonPositiveYear()
     {
         var useCases = new CarbonFactorUseCases(new FakeCarbonFactorRepository(SampleFactors()));
@@ -98,12 +153,29 @@ public sealed class CarbonFactorUseCasesTests
         var useCases = new CarbonFactorUseCases(new FakeCarbonFactorRepository(SampleFactors()));
         var requestedFilterNames = new[] { "zeta", "category", "alpha" };
 
-        var result = useCases.SearchCarbonFactors(new FactorQuery(), requestedFilterNames);
+        var result = useCases.SearchCarbonFactors(
+            new FactorQuery(),
+            requestedFilterNames: requestedFilterNames);
 
         Assert.False(result.IsSuccess);
         Assert.Null(result.Value);
         Assert.Equal("invalid_query", result.Error!.Code);
         Assert.Equal("unsupported filters: alpha, zeta", result.Error.Details["reason"]);
+    }
+
+    [Fact]
+    public void SearchCarbonFactorsReturnsInvalidQueryForNonPositiveLimit()
+    {
+        var useCases = new CarbonFactorUseCases(new FakeCarbonFactorRepository(SampleFactors()));
+
+        var result = useCases.SearchCarbonFactors(
+            new FactorQuery(),
+            new FactorPaginationQuery(Limit: 0),
+            ["limit"]);
+
+        Assert.False(result.IsSuccess);
+        Assert.Null(result.Value);
+        Assert.Equal("limit must be positive", result.Error!.Details["reason"]);
     }
 
     private static IReadOnlyCollection<CarbonFactor> SampleFactors()

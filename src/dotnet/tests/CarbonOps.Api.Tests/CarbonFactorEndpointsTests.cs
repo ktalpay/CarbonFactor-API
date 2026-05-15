@@ -37,6 +37,45 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
     }
 
     [Fact]
+    public async Task ListCarbonFactorsAppliesOffsetAndLimit()
+    {
+        var response = await client.GetAsync("/carbon-factors?offset=1&limit=1");
+
+        response.EnsureSuccessStatusCode();
+
+        var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+
+        Assert.Equal(3, payload.GetProperty("total").GetInt32());
+        Assert.Equal(["f-002"], payload.GetProperty("factors").EnumerateArray().Select(factor => factor.GetProperty("id").GetString()));
+    }
+
+    [Fact]
+    public async Task ListCarbonFactorsReturnsInvalidQueryForNegativeOffset()
+    {
+        var response = await client.GetAsync("/carbon-factors?offset=-1");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+
+        AssertErrorShape(payload, "invalid_query", "Invalid query");
+        Assert.Equal("offset must be zero or positive", payload.GetProperty("details").GetProperty("reason").GetString());
+    }
+
+    [Fact]
+    public async Task ListCarbonFactorsReturnsInvalidQueryForUnsupportedFilters()
+    {
+        var response = await client.GetAsync("/carbon-factors?category=electricity");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+
+        AssertErrorShape(payload, "invalid_query", "Invalid query");
+        Assert.Equal("unsupported filters: category", payload.GetProperty("details").GetProperty("reason").GetString());
+    }
+
+    [Fact]
     public async Task GetCarbonFactorByIdReturnsMatchingFactor()
     {
         var response = await client.GetAsync("/carbon-factors/f-002");
@@ -110,6 +149,20 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
     }
 
     [Fact]
+    public async Task SearchCarbonFactorsAppliesOffsetAndLimit()
+    {
+        var response = await client.GetAsync("/carbon-factors/search?year=2024&offset=1&limit=1");
+
+        response.EnsureSuccessStatusCode();
+
+        var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+
+        AssertObjectPropertyNames(payload, "factors", "total");
+        Assert.Equal(2, payload.GetProperty("total").GetInt32());
+        Assert.Equal(["f-002"], payload.GetProperty("factors").EnumerateArray().Select(factor => factor.GetProperty("id").GetString()));
+    }
+
+    [Fact]
     public async Task SearchCarbonFactorsReturnsEmptyCollectionForSupportedFilterWithNoMatches()
     {
         var response = await client.GetAsync("/carbon-factors/search?category=electricity&region=EU");
@@ -147,6 +200,19 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
 
         AssertErrorShape(payload, "invalid_query", "Invalid query");
         Assert.Equal("year must be an integer", payload.GetProperty("details").GetProperty("reason").GetString());
+    }
+
+    [Fact]
+    public async Task SearchCarbonFactorsReturnsInvalidQueryForNonPositiveLimit()
+    {
+        var response = await client.GetAsync("/carbon-factors/search?limit=0");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+
+        AssertErrorShape(payload, "invalid_query", "Invalid query");
+        Assert.Equal("limit must be positive", payload.GetProperty("details").GetProperty("reason").GetString());
     }
 
     [Fact]

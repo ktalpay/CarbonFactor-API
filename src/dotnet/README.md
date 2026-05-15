@@ -69,7 +69,8 @@ minimal HTTP surface for carbon factor lookup:
 
 - `GET /carbon-factors`
 - `GET /carbon-factors/{factorId}`
-- `GET /carbon-factors/search?category=...&activity=...&region=...&year=...`
+- `GET /carbon-factors?offset=...&limit=...`
+- `GET /carbon-factors/search?category=...&activity=...&region=...&year=...&offset=...&limit=...`
 
 Application failures are returned as deterministic HTTP responses using the
 shared `ApiError` contract: `not_found` maps to `404`, and `invalid_query`
@@ -78,10 +79,13 @@ maps to `400`.
 The current endpoint parity coverage is wire-format focused:
 
 - list responses serialize as `factors` plus `total`
+- list and search support optional `offset` and `limit` pagination
 - detail responses serialize as `factor`
 - factor objects preserve `factor_value` and `factor_unit` snake_case names
-- search accepts only `category`, `activity`, `region`, and `year`
+- search accepts only `category`, `activity`, `region`, `year`, `offset`, and `limit`
 - unsupported filters, non-positive years, and non-integer `year` values
+  return deterministic `invalid_query` envelopes
+- invalid pagination values such as negative `offset` or non-positive `limit`
   return deterministic `invalid_query` envelopes
 - missing factors return deterministic `not_found` envelopes with `details.id`
 
@@ -107,12 +111,14 @@ and `ApiError.InvalidQuery(...)`.
 
 - `ICarbonFactorRepository`: application-owned lookup port returning domain
   `CarbonFactor` records.
-- `CarbonFactorUseCases.ListCarbonFactors()`: returns factors sorted by id.
+- `CarbonFactorUseCases.ListCarbonFactors()`: returns factors sorted by id and
+  supports deterministic `offset`/`limit` pagination.
 - `CarbonFactorUseCases.GetCarbonFactorById(...)`: returns a detail response or
   deterministic `not_found` error.
 - `CarbonFactorUseCases.SearchCarbonFactors(...)`: applies exact-match filters
-  for `Category`, `Activity`, `Region`, and `Year`, with deterministic
-  `invalid_query` errors for non-positive years or unsupported extra filters.
+  for `Category`, `Activity`, `Region`, and `Year`, then applies deterministic
+  `offset`/`limit` pagination with deterministic `invalid_query` errors for
+  non-positive years, invalid pagination values, or unsupported extra filters.
 
 ## Validation
 
@@ -148,9 +154,28 @@ Host: localhost
   "total": 3
 }
 
+GET /carbon-factors?offset=1&limit=1 HTTP/1.1
+Host: localhost
+{
+  "factors": [
+    {
+      "id": "f-002",
+      "source": "synthetic",
+      "category": "transport",
+      "activity": "passenger vehicle",
+      "factor_value": 0.19,
+      "factor_unit": "kgCO2e/km",
+      "region": "US",
+      "year": 2024,
+      "notes": "vehicle sample"
+    }
+  ],
+  "total": 3
+}
+
 GET /carbon-factors/search
 
-GET /carbon-factors/search?category=electricity&activity=grid%20electricity&region=US-WEST&year=2024 HTTP/1.1
+GET /carbon-factors/search?category=electricity&activity=grid%20electricity&region=US-WEST&year=2024&offset=0&limit=1 HTTP/1.1
 Host: localhost
 {
   "factors": [
@@ -175,6 +200,16 @@ Host: localhost
   "message": "Invalid query",
   "details": {
     "reason": "year must be an integer"
+  }
+}
+
+GET /carbon-factors/search?limit=0 HTTP/1.1
+Host: localhost
+{
+  "code": "invalid_query",
+  "message": "Invalid query",
+  "details": {
+    "reason": "limit must be positive"
   }
 }
 
@@ -204,4 +239,3 @@ Host: localhost
     "id": "missing-factor"
   }
 }
-
