@@ -48,7 +48,8 @@ Status mappings:
 
 ## Behavior
 
-- List factors with deterministic sorting by `id`.
+- List and search factors with deterministic sorting by `id`, with explicit
+  tie-breakers applied before pagination.
 - Get factor by exact `id`.
 - Search by supported filters (`category`, `activity`, `region`, `year`).
 - Return structured error objects for not-found and invalid queries.

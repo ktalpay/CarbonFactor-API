@@ -33,6 +33,19 @@ public sealed class CarbonFactorUseCasesTests
     }
 
     [Fact]
+    public void ListCarbonFactorsUsesDeterministicTieBreakersWhenIdsMatch()
+    {
+        var useCases = new CarbonFactorUseCases(new FakeCarbonFactorRepository(DuplicateIdFactors()));
+
+        var response = useCases.ListCarbonFactors();
+
+        Assert.Equal(4, response.Total);
+        Assert.Equal(
+            ["source-a/electricity/alpha", "source-a/electricity/beta", "source-b/electricity/alpha", "source-c/transport/zeta"],
+            response.Factors.Select(factor => $"{factor.Source}/{factor.Category}/{factor.Activity}"));
+    }
+
+    [Fact]
     public void ListCarbonFactorsReturnsInvalidQueryForNegativeOffset()
     {
         var useCases = new CarbonFactorUseCases(new FakeCarbonFactorRepository(SampleFactors()));
@@ -134,6 +147,24 @@ public sealed class CarbonFactorUseCasesTests
     }
 
     [Fact]
+    public void SearchCarbonFactorsAppliesDeterministicSortingBeforePaginationWhenIdsMatch()
+    {
+        var useCases = new CarbonFactorUseCases(new FakeCarbonFactorRepository(DuplicateIdFactors()));
+
+        var result = useCases.SearchCarbonFactors(
+            new FactorQuery(Year: 2024),
+            new FactorPaginationQuery(Offset: 1, Limit: 2),
+            ["year", "offset", "limit"]);
+
+        Assert.True(result.IsSuccess);
+        Assert.Null(result.Error);
+        Assert.Equal(4, result.Value!.Total);
+        Assert.Equal(
+            ["source-a/electricity/beta", "source-b/electricity/alpha"],
+            result.Value.Factors.Select(factor => $"{factor.Source}/{factor.Category}/{factor.Activity}"));
+    }
+
+    [Fact]
     public void SearchCarbonFactorsReturnsInvalidQueryForNonPositiveYear()
     {
         var useCases = new CarbonFactorUseCases(new FakeCarbonFactorRepository(SampleFactors()));
@@ -212,6 +243,53 @@ public sealed class CarbonFactorUseCasesTests
                 "US",
                 2024,
                 "vehicle sample")
+        ];
+    }
+
+    private static IReadOnlyCollection<CarbonFactor> DuplicateIdFactors()
+    {
+        return
+        [
+            new CarbonFactor(
+                "f-001",
+                "source-c",
+                "transport",
+                "zeta",
+                0.30m,
+                "kgCO2e/km",
+                "US",
+                2024,
+                "note-c"),
+            new CarbonFactor(
+                "f-001",
+                "source-b",
+                "electricity",
+                "alpha",
+                0.20m,
+                "kgCO2e/kWh",
+                "TR",
+                2024,
+                "note-b"),
+            new CarbonFactor(
+                "f-001",
+                "source-a",
+                "electricity",
+                "beta",
+                0.10m,
+                "kgCO2e/kWh",
+                "US",
+                2024,
+                "note-a2"),
+            new CarbonFactor(
+                "f-001",
+                "source-a",
+                "electricity",
+                "alpha",
+                0.10m,
+                "kgCO2e/kWh",
+                "US",
+                2024,
+                "note-a1")
         ];
     }
 

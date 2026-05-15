@@ -112,13 +112,15 @@ and `ApiError.InvalidQuery(...)`.
 - `ICarbonFactorRepository`: application-owned lookup port returning domain
   `CarbonFactor` records.
 - `CarbonFactorUseCases.ListCarbonFactors()`: returns factors sorted by id and
-  supports deterministic `offset`/`limit` pagination.
+  uses explicit deterministic tie-breakers before applying `offset`/`limit`
+  pagination.
 - `CarbonFactorUseCases.GetCarbonFactorById(...)`: returns a detail response or
   deterministic `not_found` error.
 - `CarbonFactorUseCases.SearchCarbonFactors(...)`: applies exact-match filters
-  for `Category`, `Activity`, `Region`, and `Year`, then applies deterministic
-  `offset`/`limit` pagination with deterministic `invalid_query` errors for
-  non-positive years, invalid pagination values, or unsupported extra filters.
+  for `Category`, `Activity`, `Region`, and `Year`, then applies the same
+  deterministic ordering and `offset`/`limit` pagination with deterministic
+  `invalid_query` errors for non-positive years, invalid pagination values, or
+  unsupported extra filters.
 
 ## Validation
 

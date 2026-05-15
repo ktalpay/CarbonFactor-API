@@ -127,8 +127,7 @@ public sealed class CarbonFactorUseCases
         IEnumerable<CarbonFactor> factors,
         FactorPaginationQuery pagination)
     {
-        var orderedFactors = factors
-            .OrderBy(factor => factor.Id, StringComparer.Ordinal)
+        var orderedFactors = OrderFactorsDeterministically(factors)
             .Select(CarbonFactorMapper.ToDto)
             .ToList();
 
@@ -138,6 +137,21 @@ public sealed class CarbonFactorUseCases
             .ToList();
 
         return new FactorListResponse(pagedFactors, orderedFactors.Count);
+    }
+
+    private static IOrderedEnumerable<CarbonFactor> OrderFactorsDeterministically(
+        IEnumerable<CarbonFactor> factors)
+    {
+        return factors
+            .OrderBy(factor => factor.Id, StringComparer.Ordinal)
+            .ThenBy(factor => factor.Source, StringComparer.Ordinal)
+            .ThenBy(factor => factor.Category, StringComparer.Ordinal)
+            .ThenBy(factor => factor.Activity, StringComparer.Ordinal)
+            .ThenBy(factor => factor.Region ?? string.Empty, StringComparer.Ordinal)
+            .ThenBy(factor => factor.Year ?? int.MinValue)
+            .ThenBy(factor => factor.FactorValue)
+            .ThenBy(factor => factor.FactorUnit, StringComparer.Ordinal)
+            .ThenBy(factor => factor.Notes ?? string.Empty, StringComparer.Ordinal);
     }
 
     private static ApiError? ValidatePagination(FactorPaginationQuery pagination)
