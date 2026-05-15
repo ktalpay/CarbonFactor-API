@@ -123,3 +123,85 @@ dotnet restore CarbonOps.Api.sln
 dotnet build CarbonOps.Api.sln
 dotnet test CarbonOps.Api.sln
 ```
+
+## Endpoint Examples
+
+`GET /carbon-factors`
+
+```http
+GET /carbon-factors HTTP/1.1
+Host: localhost
+{
+  "factors": [
+    {
+      "id": "f-001",
+      "source": "synthetic",
+      "category": "electricity",
+      "activity": "grid electricity",
+      "factor_value": 0.42,
+      "factor_unit": "kgCO2e/kWh",
+      "region": "US-WEST",
+      "year": 2024,
+      "notes": "grid sample"
+    }
+  ],
+  "total": 3
+}
+
+GET /carbon-factors/search
+
+GET /carbon-factors/search?category=electricity&activity=grid%20electricity&region=US-WEST&year=2024 HTTP/1.1
+Host: localhost
+{
+  "factors": [
+    {
+      "id": "f-001",
+      "source": "synthetic",
+      "category": "electricity",
+      "activity": "grid electricity",
+      "factor_value": 0.42,
+      "factor_unit": "kgCO2e/kWh",
+      "region": "US-WEST",
+      "year": 2024,
+      "notes": "grid sample"
+    }
+  ],
+  "total": 1
+}
+GET /carbon-factors/search?year=two-thousand-twenty-four HTTP/1.1
+Host: localhost
+{
+  "code": "invalid_query",
+  "message": "Invalid query",
+  "details": {
+    "reason": "year must be an integer"
+  }
+}
+
+GET /carbon-factors/{factorId}
+
+GET /carbon-factors/f-002 HTTP/1.1
+Host: localhost
+{
+  "factor": {
+    "id": "f-002",
+    "source": "synthetic",
+    "category": "transport",
+    "activity": "passenger vehicle",
+    "factor_value": 0.19,
+    "factor_unit": "kgCO2e/km",
+    "region": "US",
+    "year": 2024,
+    "notes": "vehicle sample"
+  }
+}
+GET /carbon-factors/missing-factor HTTP/1.1
+Host: localhost
+{
+  "code": "not_found",
+  "message": "factor not found",
+  "details": {
+    "id": "missing-factor"
+  }
+}
+
