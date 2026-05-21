@@ -2,48 +2,41 @@
 
 ## Current Phase
 
-The current phase establishes independent Python and .NET implementation roots
-while preserving existing CarbonOps-API behavior and repository identity.
+The current phase focuses on public documentation baseline quality, discoverability, and architecture clarity for CarbonOps-API as a clean architecture .NET/ASP.NET Core API project for carbon accounting and emission factors workflows.
 
 ## Near-Term
 
-1. Keep the current contract, route behavior, transport envelopes, and tests
-   stable.
-2. Expand documentation around API boundaries, domain model, limitations, and
-   production readiness.
-3. Keep clean-architecture boundaries explicit as implementation work expands.
-4. Expand the .NET-first implementation path without changing existing runtime
-   behavior unless explicitly scoped.
-5. Keep the Python implementation under `src/python` while preserving current
-   behavior.
+1. Keep implemented route behavior and tests stable while improving documentation quality.
+2. Expand API boundary, limitations, and production-readiness documentation with evidence-backed statements only.
+3. Continue clean architecture layering across contracts, application, infrastructure adapters, and tests.
+4. Expand the .NET-first implementation path without changing public runtime behavior unless explicitly scoped.
+5. Keep the Python implementation under `src/python` as an independent path while maintaining current behavior.
 
 ## Platform Integration Direction
 
-- CarbonOps-Web is the future frontend and platform consumer of CarbonOps-API.
-- CarbonOps-Parser remains a separate ingestion and parsing project.
-- CarbonOps-API may later consume parser-produced data through an explicit
-  artifact, persistence, or service boundary.
+- CarbonOps-Web is a future consumer surface for CarbonOps-API.
+- CarbonOps-Parser remains a separate ingestion/normalization project for source data.
+- CarbonOps-API may later expose curated parser-fed data through explicit artifact or persistence boundaries.
 - No cross-repository runtime coupling is introduced in this phase.
 
 ## Later Phases
 
-- Add .NET carbon factor use cases and API behavior behind the established
-  project boundaries.
-- Add persistence behind a documented infrastructure boundary.
-- Add authentication and authorization.
+- Add broader .NET carbon factor use cases behind existing boundaries.
+- Add persistence adapters behind infrastructure contracts.
+- Add authentication and authorization capabilities.
 - Add audit logging and operational observability.
 - Add rate limiting and abuse controls.
-- Define parser data ingestion or synchronization contracts.
-- Evolve the Python implementation inside `src/python` when explicitly scoped.
+- Define parser data ingestion/synchronization contracts.
+- Evolve Python implementation only when explicitly scoped.
 
-## Non-Goals For This Phase
+## Non-Goals For Current Phase
 
-- Production deployment
-- External API integrations
-- Database infrastructure
-- Authentication or authorization
-- Audit logging
-- Rate limiting
-- Parser execution
-- Runtime behavior changes
-- Official provider compatibility claims
+- Production deployment claims
+- Legal/compliance correctness claims
+- Official source-owner correctness claims
+- Database infrastructure rollout
+- Authentication or authorization rollout
+- Audit logging rollout
+- Rate limiting rollout
+- Parser execution inside this API runtime
+- Runtime behavior changes without explicit scope
