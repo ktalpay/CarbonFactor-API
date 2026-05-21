@@ -1,4 +1,6 @@
 using CarbonOps.Application.Factors;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CarbonOps.Infrastructure.Tests;
@@ -60,5 +62,25 @@ public sealed class InMemoryCarbonFactorRepositoryTests
         Assert.IsType<InMemoryCarbonFactorRepository>(repository);
         Assert.Equal(3, response.Total);
         Assert.Equal(["f-001", "f-002", "f-003"], response.Factors.Select(factor => factor.Id));
+    }
+
+    [Fact]
+    public void AddCarbonFactorServicesRegistersDbContextWhenPostgreSqlEnabled()
+    {
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Persistence:UsePostgreSql"] = "true",
+                ["Persistence:PostgreSql:ConnectionString"] = "Host=localhost;Database=carbonops;Username=test;Password=test"
+            })
+            .Build();
+
+        var services = new ServiceCollection();
+        services.AddCarbonFactorServices(config);
+
+        using var provider = services.BuildServiceProvider();
+        var dbContextOptions = provider.GetRequiredService<DbContextOptions<CarbonOpsDbContext>>();
+
+        Assert.NotNull(dbContextOptions);
     }
 }

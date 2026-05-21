@@ -2,7 +2,7 @@ using CarbonOps.Api;
 using CarbonOps.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddCarbonFactorServices();
+builder.Services.AddCarbonFactorServices(builder.Configuration);
 var app = builder.Build();
 
 app.UseMiddleware<ApiErrorMappingMiddleware>();
