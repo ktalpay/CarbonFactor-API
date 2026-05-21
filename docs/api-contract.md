@@ -153,3 +153,42 @@ Each validation message now uses deterministic shape:
 - No DB writes.
 - No import execution/background job.
 - No parser project changes.
+
+## Source version and duplicate handling (ING-004)
+
+- `POST /carbon-factors/import` remains boundary-only and deterministic (`persisted=false`, `import_execution="not_started"`), with no DB writes or import execution.
+- Additional required batch source metadata:
+  - `source.publication` is required.
+  - `source.publication_version` is required.
+- When `parser_metadata` is present, both fields are required:
+  - `parser_metadata.parser_name`
+  - `parser_metadata.parser_version`
+- `published_at_utc` and `generated_at_utc` remain optional DTO fields and continue to flow via deterministic snake_case JSON contract serialization.
+
+### Duplicate handling policy
+
+- Duplicate `external_factor_id` in the same batch remains a row-level validation error (`field=external_factor_id`, `code=duplicate`).
+- Duplicate factor identity in the same batch is now detected deterministically and rejected for the **later** row(s), using:
+  - `source_provider`
+  - `source_family`
+  - `category`
+  - `activity`
+  - `region` (null/blank normalized consistently)
+  - `year` (normalized consistently)
+  - `factor_version` (null/blank normalized consistently)
+  - `factor_unit`
+- Duplicate factor identity emits row-level validation error:
+  - `field=factor_identity`
+  - `code=duplicate_factor_identity`
+- `factor_version` participates in identity comparison when present; different non-blank versions are treated as distinct identities.
+
+### Mixed-batch behavior (unchanged)
+
+- At least one valid row: `202 Accepted` with accepted/rejected counts and row-level warnings/errors.
+- Zero valid rows after validation: `400 invalid_query`.
+
+### Non-goals preserved
+
+- No persistence/import execution behavior.
+- No auth in this task (SEC-001 remains separate).
+- No tenant scoping in this task (SEC-002 remains separate).

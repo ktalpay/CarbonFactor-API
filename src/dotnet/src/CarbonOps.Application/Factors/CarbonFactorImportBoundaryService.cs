@@ -23,11 +23,20 @@ public sealed class CarbonFactorImportBoundaryService
         if (request.Source is null) return Invalid("source is required");
         if (string.IsNullOrWhiteSpace(request.Source.SourceFamily)) return Invalid("source.source_family is required");
         if (string.IsNullOrWhiteSpace(request.Source.SourceProvider)) return Invalid("source.source_provider is required");
+        if (string.IsNullOrWhiteSpace(request.Source.Publication)) return Invalid("source.publication is required");
+        if (string.IsNullOrWhiteSpace(request.Source.PublicationVersion)) return Invalid("source.publication_version is required");
+        if (request.ParserMetadata is not null)
+        {
+            if (string.IsNullOrWhiteSpace(request.ParserMetadata.ParserName)) return Invalid("parser_metadata.parser_name is required when parser_metadata is provided");
+            if (string.IsNullOrWhiteSpace(request.ParserMetadata.ParserVersion)) return Invalid("parser_metadata.parser_version is required when parser_metadata is provided");
+        }
+
         if (request.Factors is null || request.Factors.Count == 0) return Invalid("factors must contain at least one item");
 
         var errors = new List<CarbonFactorImportValidationMessage>();
         var warnings = new List<CarbonFactorImportValidationMessage>();
         var seenExternalIds = new HashSet<string>(StringComparer.Ordinal);
+        var seenFactorIdentities = new HashSet<string>(StringComparer.Ordinal);
 
         for (var index = 0; index < request.Factors.Count; index++)
         {
@@ -55,6 +64,12 @@ public sealed class CarbonFactorImportBoundaryService
             if (!string.IsNullOrWhiteSpace(externalId) && !seenExternalIds.Add(externalId))
             {
                 rowErrors.Add(new CarbonFactorImportValidationMessage(index, externalId, "external_factor_id", "duplicate", "external_factor_id must be unique within batch"));
+            }
+
+            var factorIdentity = BuildFactorIdentity(factor);
+            if (!seenFactorIdentities.Add(factorIdentity))
+            {
+                rowErrors.Add(new CarbonFactorImportValidationMessage(index, externalId, "factor_identity", "duplicate_factor_identity", "factor identity must be unique within batch"));
             }
 
             if (!string.IsNullOrWhiteSpace(factor.SourceFamily)
@@ -86,6 +101,31 @@ public sealed class CarbonFactorImportBoundaryService
                 "not_started",
                 warnings,
                 errors));
+    }
+
+
+    private static string BuildFactorIdentity(ParserCarbonFactorImportItem factor)
+    {
+        return string.Join(
+            "|",
+            NormalizeRequiredIdentityField(factor.SourceProvider),
+            NormalizeRequiredIdentityField(factor.SourceFamily),
+            NormalizeRequiredIdentityField(factor.Category),
+            NormalizeRequiredIdentityField(factor.Activity),
+            NormalizeOptionalIdentityField(factor.Region),
+            NormalizeOptionalIdentityField(factor.Year?.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+            NormalizeOptionalIdentityField(factor.FactorVersion),
+            NormalizeRequiredIdentityField(factor.FactorUnit));
+    }
+
+    private static string NormalizeRequiredIdentityField(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+    }
+
+    private static string NormalizeOptionalIdentityField(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }
 
     private static void AddRequiredFieldError(ICollection<CarbonFactorImportValidationMessage> errors, int rowIndex, string? externalId, string field, string? value)

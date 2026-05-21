@@ -61,6 +61,72 @@ public sealed class CarbonFactorImportBoundaryServiceTests
     }
 
     [Fact]
+    public void ValidateAndAcceptRequiresSourcePublication()
+    {
+        var request = CreateRequest() with { Source = CreateRequest().Source with { Publication = " " } };
+        var result = service.ValidateAndAccept(request);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("source.publication is required", result.Error!.Details["reason"]);
+    }
+
+    [Fact]
+    public void ValidateAndAcceptRequiresSourcePublicationVersion()
+    {
+        var request = CreateRequest() with { Source = CreateRequest().Source with { PublicationVersion = " " } };
+        var result = service.ValidateAndAccept(request);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("source.publication_version is required", result.Error!.Details["reason"]);
+    }
+
+    [Fact]
+    public void ValidateAndAcceptValidatesParserMetadataWhenPresent()
+    {
+        var request = CreateRequest() with
+        {
+            ParserMetadata = new ParserProvenanceMetadataDto(" ", "1.0")
+        };
+        var result = service.ValidateAndAccept(request);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("parser_metadata.parser_name is required when parser_metadata is provided", result.Error!.Details["reason"]);
+    }
+
+    [Fact]
+    public void ValidateAndAcceptRejectsDuplicateFactorIdentityForLaterRow()
+    {
+        var result = service.ValidateAndAccept(CreateRequest() with { Factors = [CreateFactor("id-1"), CreateFactor("id-2")] });
+
+        Assert.True(result.IsSuccess);
+        var duplicate = Assert.Single(result.Value!.Errors.Where(e => e.Code == "duplicate_factor_identity"));
+        Assert.Equal(1, duplicate.RowIndex);
+    }
+
+    [Fact]
+    public void ValidateAndAcceptAllowsDifferentFactorVersionInIdentity()
+    {
+        var first = CreateFactor("id-1") with { FactorVersion = "1.0" };
+        var second = CreateFactor("id-2") with { FactorVersion = "2.0" };
+        var result = service.ValidateAndAccept(CreateRequest() with { Factors = [first, second] });
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(2, result.Value!.AcceptedRecords);
+        Assert.Equal(0, result.Value.RejectedRecords);
+    }
+
+    [Fact]
+    public void ValidateAndAcceptNormalizesBlankNullRegionYearAndFactorVersionInIdentity()
+    {
+        var first = CreateFactor("id-1") with { Region = null, Year = null, FactorVersion = null };
+        var second = CreateFactor("id-2") with { Region = " ", Year = null, FactorVersion = " " };
+        var result = service.ValidateAndAccept(CreateRequest() with { Factors = [first, second] });
+
+        Assert.True(result.IsSuccess);
+        Assert.Contains(result.Value!.Errors, e => e.Code == "duplicate_factor_identity" && e.RowIndex == 1);
+    }
+
+    [Fact]
     public void ValidateAndAcceptAddsWarningForSourceMismatch()
     {
         var mismatch = CreateFactor("id-1") with { SourceFamily = "transport" };
