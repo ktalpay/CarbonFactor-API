@@ -266,3 +266,16 @@ See also: `docs/ingestion-production-readiness.md` for ING-007 production-readin
 - No durable audit storage in this task.
 - No auth in this task (SEC-001 remains separate).
 - No tenant scoping in this task (SEC-002 remains separate).
+
+
+## API key authentication baseline (SEC-001)
+
+- Authentication header: `X-Api-Key`.
+- Protected route(s): `POST /carbon-factors/import` only.
+- Current read endpoints remain public in this phase (`GET /carbon-factors`, `GET /carbon-factors/search`, `GET /carbon-factors/{factorId}`).
+- API key value is configuration-driven via `Security:ApiKey:ImportEndpointKey`.
+- If `Security:ApiKey:ImportEndpointKey` is missing/blank, import endpoint fails closed with `401 unauthorized`.
+- Missing or invalid key returns deterministic `401` envelope (`code=unauthorized`) without echoing key material.
+- `appsettings.Development.json` may contain an obvious non-production placeholder for local/testing only.
+- Tenant/company scoping is not implemented in SEC-001; planned for SEC-002.
+- This baseline is authentication only and does not provide tenant isolation or role/scope authorization.

@@ -29,6 +29,7 @@ internal sealed class ApiErrorMappingMiddleware
     {
         return error.Code switch
         {
+            "unauthorized" => StatusCodes.Status401Unauthorized,
             "not_found" => StatusCodes.Status404NotFound,
             "invalid_query" => StatusCodes.Status400BadRequest,
             _ => StatusCodes.Status400BadRequest
