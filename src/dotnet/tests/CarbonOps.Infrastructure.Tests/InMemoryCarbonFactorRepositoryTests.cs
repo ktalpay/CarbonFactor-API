@@ -48,15 +48,16 @@ public sealed class InMemoryCarbonFactorRepositoryTests
     }
 
     [Fact]
-    public void AddCarbonFactorServicesRegistersRepositoryAndUseCases()
+    public void AddCarbonFactorServicesRegistersInMemoryRepositoryByDefault()
     {
         var services = new ServiceCollection();
         services.AddCarbonFactorServices();
 
         using var provider = services.BuildServiceProvider();
+        using var scope = provider.CreateScope();
 
-        var repository = provider.GetRequiredService<ICarbonFactorRepository>();
-        var useCases = provider.GetRequiredService<CarbonFactorUseCases>();
+        var repository = scope.ServiceProvider.GetRequiredService<ICarbonFactorRepository>();
+        var useCases = scope.ServiceProvider.GetRequiredService<CarbonFactorUseCases>();
         var response = useCases.ListCarbonFactors();
 
         Assert.IsType<InMemoryCarbonFactorRepository>(repository);
@@ -65,7 +66,7 @@ public sealed class InMemoryCarbonFactorRepositoryTests
     }
 
     [Fact]
-    public void AddCarbonFactorServicesRegistersDbContextWhenPostgreSqlEnabled()
+    public void AddCarbonFactorServicesRegistersEfCoreRepositoryWhenPostgreSqlEnabled()
     {
         var config = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
@@ -79,8 +80,12 @@ public sealed class InMemoryCarbonFactorRepositoryTests
         services.AddCarbonFactorServices(config);
 
         using var provider = services.BuildServiceProvider();
-        var dbContextOptions = provider.GetRequiredService<DbContextOptions<CarbonOpsDbContext>>();
+        using var scope = provider.CreateScope();
+
+        var dbContextOptions = scope.ServiceProvider.GetRequiredService<DbContextOptions<CarbonOpsDbContext>>();
+        var repository = scope.ServiceProvider.GetRequiredService<ICarbonFactorRepository>();
 
         Assert.NotNull(dbContextOptions);
+        Assert.IsType<EfCoreCarbonFactorRepository>(repository);
     }
 }
