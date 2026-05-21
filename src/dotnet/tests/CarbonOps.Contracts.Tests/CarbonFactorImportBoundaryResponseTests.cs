@@ -13,6 +13,12 @@ public sealed class CarbonFactorImportBoundaryResponseTests
             10,
             2,
             "accepted_with_validation_errors",
+            "accepted_with_validation_errors",
+            12,
+            1,
+            2,
+            true,
+            true,
             false,
             "not_started",
             [new CarbonFactorImportValidationMessage(0, "ext-1", "source", "source_mismatch", "warning")],
@@ -23,6 +29,12 @@ public sealed class CarbonFactorImportBoundaryResponseTests
         Assert.Equal("batch-001", payload.GetProperty("batch_id").GetString());
         Assert.Equal(10, payload.GetProperty("accepted_records").GetInt32());
         Assert.Equal(2, payload.GetProperty("rejected_records").GetInt32());
+        Assert.Equal("accepted_with_validation_errors", payload.GetProperty("validation_status").GetString());
+        Assert.Equal(12, payload.GetProperty("total_records").GetInt32());
+        Assert.Equal(1, payload.GetProperty("warning_count").GetInt32());
+        Assert.Equal(2, payload.GetProperty("error_count").GetInt32());
+        Assert.True(payload.GetProperty("has_warnings").GetBoolean());
+        Assert.True(payload.GetProperty("has_errors").GetBoolean());
         Assert.False(payload.GetProperty("persisted").GetBoolean());
         Assert.Equal("not_started", payload.GetProperty("import_execution").GetString());
         Assert.Equal("row_index", payload.GetProperty("errors")[0].EnumerateObject().First().Name);

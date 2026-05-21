@@ -192,3 +192,40 @@ Each validation message now uses deterministic shape:
 - No persistence/import execution behavior.
 - No auth in this task (SEC-001 remains separate).
 - No tenant scoping in this task (SEC-002 remains separate).
+
+## Import result reporting (ING-005)
+
+- `POST /carbon-factors/import` now returns deterministic import result summaries while remaining boundary-only (`persisted=false`, `import_execution="not_started"`).
+- Response fields are snake_case and machine-readable:
+  - `total_records`
+  - `accepted_records`
+  - `rejected_records`
+  - `warning_count`
+  - `error_count`
+  - `has_warnings`
+  - `has_errors`
+  - `status`
+  - `validation_status`
+  - `warnings`
+  - `errors`
+
+### Validation status policy
+
+- `accepted`: all rows valid and no warnings.
+- `accepted_with_warnings`: at least one warning and zero rejected rows.
+- `accepted_with_validation_errors`: at least one valid row and at least one rejected row.
+- If zero valid rows remain after validation, endpoint behavior is unchanged: `400 invalid_query`.
+
+### Deterministic message ordering
+
+- Validation warnings and errors are deterministic and ordered by:
+  1. `row_index` ascending
+  2. `field` ascending (ordinal)
+  3. `code` ascending (ordinal)
+
+### Non-goals preserved
+
+- No data persistence.
+- No import execution / background jobs.
+- No auth implementation in this task (SEC-001 remains separate).
+- No tenant scoping in this task (SEC-002 remains separate).
