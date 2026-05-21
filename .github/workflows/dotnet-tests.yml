@@ -26,6 +26,20 @@ jobs:
   dotnet-tests:
     name: "Restore, build, and test .NET solution"
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: carbonops_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d carbonops_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     defaults:
       run:
@@ -52,4 +66,6 @@ jobs:
         run: dotnet build CarbonOps.Api.sln --no-restore
 
       - name: "Test"
+        env:
+          CARBONOPS_POSTGRESQL_TEST_DSN: Host=localhost;Port=5432;Database=carbonops_test;Username=postgres;Password=postgres;SSL Mode=Disable
         run: dotnet test CarbonOps.Api.sln --no-restore --no-build --verbosity normal
