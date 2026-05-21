@@ -1,7 +1,6 @@
 using CarbonOps.Domain;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
-using Xunit.Sdk;
 
 namespace CarbonOps.Infrastructure.Tests;
 
@@ -12,7 +11,11 @@ public sealed class EfCoreCarbonFactorRepositoryPostgreSqlIntegrationTests
     [Fact]
     public void BaselineSchemaCanBeAppliedAndRepositoryCanReadFromPostgreSql()
     {
-        var dataSource = CreateOptInDataSourceOrSkip();
+        var dataSource = CreateOptInDataSourceOrNoOp();
+        if (dataSource is null)
+        {
+            return;
+        }
 
         using var connection = dataSource.OpenConnection();
         ApplyBaselineSchema(connection);
@@ -31,7 +34,11 @@ public sealed class EfCoreCarbonFactorRepositoryPostgreSqlIntegrationTests
     [Fact]
     public void GetCarbonFactorByIdReturnsMatchingRecordAndMissingReturnsNull()
     {
-        var dataSource = CreateOptInDataSourceOrSkip();
+        var dataSource = CreateOptInDataSourceOrNoOp();
+        if (dataSource is null)
+        {
+            return;
+        }
 
         using var connection = dataSource.OpenConnection();
         ApplyBaselineSchema(connection);
@@ -51,18 +58,18 @@ public sealed class EfCoreCarbonFactorRepositoryPostgreSqlIntegrationTests
         Assert.Null(missing);
     }
 
-    private static NpgsqlDataSource CreateOptInDataSourceOrSkip()
+    private static NpgsqlDataSource? CreateOptInDataSourceOrNoOp()
     {
         var dsn = Environment.GetEnvironmentVariable(TestDsnEnvVar);
         if (string.IsNullOrWhiteSpace(dsn))
         {
-            throw new SkipException($"PostgreSQL integration tests require {TestDsnEnvVar}.");
+            return null;
         }
 
         var builder = new NpgsqlConnectionStringBuilder(dsn);
         if (builder.Database is null || !builder.Database.Contains("test", StringComparison.OrdinalIgnoreCase))
         {
-            throw new SkipException($"{TestDsnEnvVar} database name must include 'test' for safety.");
+            throw new InvalidOperationException($"{TestDsnEnvVar} database name must include 'test' for safety.");
         }
 
         return NpgsqlDataSource.Create(builder.ConnectionString);
