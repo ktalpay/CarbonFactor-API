@@ -241,3 +241,13 @@ Host: localhost
     "id": "missing-factor"
   }
 }
+
+## Persistence Production-Readiness Review (DB-008)
+
+See `docs/persistence-production-readiness.md` for a repository-grounded readiness assessment and next-step risks.
+
+Key posture reminders:
+
+- PostgreSQL remains opt-in via `Persistence:UsePostgreSql`.
+- `Persistence:PostgreSql:ConnectionString` is required when enabled and should come from secret-managed configuration in shared/prod environments (not committed appsettings).
+- API startup does not apply schema/migrations/seeds automatically.
