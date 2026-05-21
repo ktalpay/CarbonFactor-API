@@ -278,10 +278,31 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
         Assert.Equal(0, payload.GetProperty("warning_count").GetInt32());
         Assert.Equal(0, payload.GetProperty("error_count").GetInt32());
         Assert.Equal("accepted", payload.GetProperty("validation_status").GetString());
+        Assert.Equal("batch-1", payload.GetProperty("audit").GetProperty("batch_id").GetString());
         Assert.False(payload.GetProperty("has_warnings").GetBoolean());
         Assert.False(payload.GetProperty("has_errors").GetBoolean());
         Assert.False(payload.GetProperty("persisted").GetBoolean());
         Assert.Equal("not_started", payload.GetProperty("import_execution").GetString());
+    }
+
+
+    [Fact]
+    public async Task ImportCarbonFactorsReturnsDeterministicAuditIdForEquivalentRequests()
+    {
+        var request = CreateValidImportRequest();
+
+        var first = await client.PostAsJsonAsync("/carbon-factors/import", request);
+        var second = await client.PostAsJsonAsync("/carbon-factors/import", request);
+
+        Assert.Equal(HttpStatusCode.Accepted, first.StatusCode);
+        Assert.Equal(HttpStatusCode.Accepted, second.StatusCode);
+
+        var firstPayload = JsonDocument.Parse(await first.Content.ReadAsStringAsync()).RootElement;
+        var secondPayload = JsonDocument.Parse(await second.Content.ReadAsStringAsync()).RootElement;
+
+        Assert.Equal(
+            firstPayload.GetProperty("audit").GetProperty("audit_id").GetString(),
+            secondPayload.GetProperty("audit").GetProperty("audit_id").GetString());
     }
 
     [Fact]
