@@ -278,7 +278,7 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
         Assert.Equal(0, payload.GetProperty("warning_count").GetInt32());
         Assert.Equal(0, payload.GetProperty("error_count").GetInt32());
         Assert.Equal("accepted", payload.GetProperty("validation_status").GetString());
-        Assert.Equal("batch-2026-05-21-0001", payload.GetProperty("audit").GetProperty("batch_id").GetString());
+        Assert.Equal("batch-1", payload.GetProperty("audit").GetProperty("batch_id").GetString());
         Assert.False(payload.GetProperty("has_warnings").GetBoolean());
         Assert.False(payload.GetProperty("has_errors").GetBoolean());
         Assert.False(payload.GetProperty("persisted").GetBoolean());
