@@ -30,5 +30,6 @@ This folder contains a **reviewable SQL baseline** and deterministic manifest fo
 
 - No EF-generated migrations are introduced.
 - No startup calls to `Database.Migrate()` or `Database.EnsureCreated()` are added.
-- No seed/reference data strategy is included.
+- Seed/reference data strategy is defined in application code via `CarbonFactorReferenceDataCatalog` for deterministic sample/dev/test records.
+- API startup still does not execute any seed writes automatically; controlled data loading remains a separate future concern.
 - No destructive schema operations are introduced.

@@ -24,6 +24,16 @@ public sealed class InMemoryCarbonFactorRepositoryTests
         Assert.Equal("grid sample", factors[0].Notes);
     }
 
+
+    [Fact]
+    public void ListCarbonFactorsSharesReferenceCatalogSeedData()
+    {
+        var repository = new InMemoryCarbonFactorRepository();
+
+        var factors = repository.ListCarbonFactors();
+
+        Assert.Same(CarbonFactorReferenceDataCatalog.GetSampleCarbonFactors(), factors);
+    }
     [Fact]
     public void GetCarbonFactorByIdReturnsMatchingSeededFactor()
     {
