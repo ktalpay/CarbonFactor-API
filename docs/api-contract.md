@@ -110,3 +110,46 @@ Notes:
 - This boundary does **not** persist data yet; no database write/import execution occurs in ING-002.
 - SEC-001 will add API key authentication.
 - Future ING tasks will implement import execution and persistence.
+
+## Carbon factor import validation model (ING-003)
+
+- `POST /carbon-factors/import` now performs deterministic row-level validation while still remaining boundary-only (no persistence and no import execution).
+- Required batch-level validation:
+  - `contract_version` required and must be supported (`1.0`).
+  - `batch_id` required.
+  - `source` required.
+  - `source.source_family` and `source.source_provider` required.
+  - `factors` must contain at least one item.
+- Required factor-level validation:
+  - `external_factor_id`, `source_family`, `source_provider`, `category`, `activity`, `factor_unit` required.
+  - `factor_value` must be `>= 0`.
+  - `year` (when provided) must be in deterministic range `1900..2100`.
+  - duplicate `external_factor_id` values in the same batch are rejected deterministically.
+- Source mismatch (`source_family`/`source_provider` between batch source and factor item) is preserved as a deterministic **warning** (not a rejection), aligned with ING-002 behavior.
+
+### Mixed valid/invalid row policy
+
+- If at least one row is valid, endpoint returns `202 Accepted` with:
+  - `accepted_records`
+  - `rejected_records`
+  - `status = "accepted_with_validation_errors"` when any rows are invalid
+  - row-level `errors` and `warnings`
+  - `persisted = false`
+  - `import_execution = "not_started"`
+- If zero valid rows remain after validation, endpoint returns `400 invalid_query` with reason `no valid factor rows remain after validation`.
+
+### Row-level validation details (snake_case)
+
+Each validation message now uses deterministic shape:
+- `row_index`
+- `external_factor_id` (nullable if missing)
+- `field`
+- `code`
+- `message`
+
+### Security and non-goals
+
+- SEC-001 authentication scope is unchanged.
+- No DB writes.
+- No import execution/background job.
+- No parser project changes.
