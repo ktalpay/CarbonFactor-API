@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using CarbonOps.Contracts;
 
 namespace CarbonOps.Application.Factors;
@@ -111,6 +113,7 @@ public sealed class CarbonFactorImportBoundaryService
         return ApplicationResult<CarbonFactorImportBoundaryResponse>.Success(
             new CarbonFactorImportBoundaryResponse(
                 request.BatchId,
+                BuildAuditMetadata(request),
                 acceptedRows,
                 rejectedRows,
                 validationStatus,
@@ -124,6 +127,43 @@ public sealed class CarbonFactorImportBoundaryService
                 "not_started",
                 orderedWarnings,
                 orderedErrors));
+    }
+
+    private static CarbonFactorImportBoundaryAuditMetadata BuildAuditMetadata(ParserCarbonFactorBatchImportRequest request)
+    {
+        var source = request.Source;
+        var parser = request.ParserMetadata;
+        var auditId = BuildAuditId(request, parser?.ParserRunId);
+
+        return new CarbonFactorImportBoundaryAuditMetadata(
+            auditId,
+            request.BatchId,
+            request.ContractVersion,
+            source.SourceSystem,
+            source.SourceFamily,
+            source.SourceProvider,
+            source.Publication,
+            source.PublicationVersion,
+            parser?.ParserName,
+            parser?.ParserVersion,
+            parser?.ParserRunId,
+            parser?.GeneratedAtUtc,
+            parser?.GeneratedAtUtc);
+    }
+
+    private static string BuildAuditId(ParserCarbonFactorBatchImportRequest request, string? parserRunId)
+    {
+        var canonical = string.Join("|",
+            NormalizeRequiredIdentityField(request.ContractVersion),
+            NormalizeRequiredIdentityField(request.BatchId),
+            NormalizeRequiredIdentityField(request.Source.SourceProvider),
+            NormalizeRequiredIdentityField(request.Source.SourceFamily),
+            NormalizeRequiredIdentityField(request.Source.Publication),
+            NormalizeRequiredIdentityField(request.Source.PublicationVersion),
+            NormalizeOptionalIdentityField(parserRunId));
+
+        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(canonical));
+        return Convert.ToHexString(hash).ToLowerInvariant();
     }
 
 

@@ -10,6 +10,7 @@ public sealed class CarbonFactorImportBoundaryResponseTests
     {
         var response = new CarbonFactorImportBoundaryResponse(
             "batch-001",
+            new CarbonFactorImportBoundaryAuditMetadata("aid","batch-001","1.0","parser","electricity","synthetic","pub","v1","name","1.2","run-1",null,null),
             10,
             2,
             "accepted_with_validation_errors",
@@ -27,6 +28,7 @@ public sealed class CarbonFactorImportBoundaryResponseTests
         var payload = JsonSerializer.SerializeToElement(response);
 
         Assert.Equal("batch-001", payload.GetProperty("batch_id").GetString());
+        Assert.Equal("aid", payload.GetProperty("audit").GetProperty("audit_id").GetString());
         Assert.Equal(10, payload.GetProperty("accepted_records").GetInt32());
         Assert.Equal(2, payload.GetProperty("rejected_records").GetInt32());
         Assert.Equal("accepted_with_validation_errors", payload.GetProperty("validation_status").GetString());

@@ -14,6 +14,7 @@ public sealed class CarbonFactorImportBoundaryServiceTests
 
         Assert.True(result.IsSuccess);
         Assert.Equal(1, result.Value!.AcceptedRecords);
+        Assert.Equal("batch-2026-05-21-0001", result.Value.Audit.BatchId);
         Assert.Equal(0, result.Value.RejectedRecords);
         Assert.Equal("accepted", result.Value.Status);
         Assert.Equal("accepted", result.Value.ValidationStatus);
@@ -24,6 +25,47 @@ public sealed class CarbonFactorImportBoundaryServiceTests
         Assert.False(result.Value.HasErrors);
         Assert.False(result.Value.Persisted);
         Assert.Equal("not_started", result.Value.ImportExecution);
+    }
+
+
+    [Fact]
+    public void ValidateAndAcceptReturnsDeterministicAuditIdForEquivalentRequests()
+    {
+        var first = service.ValidateAndAccept(CreateRequest());
+        var second = service.ValidateAndAccept(CreateRequest());
+
+        Assert.True(first.IsSuccess);
+        Assert.True(second.IsSuccess);
+        Assert.Equal(first.Value!.Audit.AuditId, second.Value!.Audit.AuditId);
+    }
+
+    [Fact]
+    public void ValidateAndAcceptChangesAuditIdWhenBatchOrPublicationVersionChanges()
+    {
+        var first = service.ValidateAndAccept(CreateRequest());
+        var second = service.ValidateAndAccept(CreateRequest() with { BatchId = "batch-other" });
+        var third = service.ValidateAndAccept(CreateRequest() with { Source = CreateRequest().Source with { PublicationVersion = "v2" } });
+
+        Assert.NotEqual(first.Value!.Audit.AuditId, second.Value!.Audit.AuditId);
+        Assert.NotEqual(first.Value.Audit.AuditId, third.Value!.Audit.AuditId);
+    }
+
+    [Fact]
+    public void ValidateAndAcceptReflectsParserMetadataWhenPresentAndNullWhenMissing()
+    {
+        var withParser = service.ValidateAndAccept(CreateRequest() with
+        {
+            ParserMetadata = new ParserProvenanceMetadataDto("parser-x", "1.0.0", "run-123", new DateTimeOffset(2026, 5, 21, 0, 0, 0, TimeSpan.Zero))
+        });
+
+        var withoutParser = service.ValidateAndAccept(CreateRequest());
+
+        Assert.Equal("parser-x", withParser.Value!.Audit.ParserName);
+        Assert.Equal("1.0.0", withParser.Value.Audit.ParserVersion);
+        Assert.Equal("run-123", withParser.Value.Audit.ParserRunId);
+        Assert.Equal(new DateTimeOffset(2026, 5, 21, 0, 0, 0, TimeSpan.Zero), withParser.Value.Audit.GeneratedAtUtc);
+        Assert.Null(withoutParser.Value!.Audit.ParserName);
+        Assert.Null(withoutParser.Value.Audit.GeneratedAtUtc);
     }
 
     [Fact]
@@ -63,6 +105,7 @@ public sealed class CarbonFactorImportBoundaryServiceTests
 
         Assert.True(result.IsSuccess);
         Assert.Equal(1, result.Value!.AcceptedRecords);
+        Assert.Equal("batch-2026-05-21-0001", result.Value.Audit.BatchId);
         Assert.Equal(1, result.Value.RejectedRecords);
         Assert.Contains(result.Value.Errors, e => e.Code == "duplicate");
     }
@@ -162,6 +205,7 @@ public sealed class CarbonFactorImportBoundaryServiceTests
 
         Assert.True(result.IsSuccess);
         Assert.Equal(1, result.Value!.AcceptedRecords);
+        Assert.Equal("batch-2026-05-21-0001", result.Value.Audit.BatchId);
         Assert.Equal(1, result.Value.RejectedRecords);
         Assert.Equal("accepted_with_validation_errors", result.Value.Status);
         Assert.Equal(result.Value.Status, result.Value.ValidationStatus);

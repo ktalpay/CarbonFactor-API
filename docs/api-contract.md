@@ -229,3 +229,37 @@ Each validation message now uses deterministic shape:
 - No import execution / background jobs.
 - No auth implementation in this task (SEC-001 remains separate).
 - No tenant scoping in this task (SEC-002 remains separate).
+
+## Import audit trail (ING-006)
+
+- `POST /carbon-factors/import` now includes deterministic boundary-level audit metadata under `audit` while remaining boundary-only (`persisted=false`, `import_execution="not_started"`).
+- Audit metadata is request-derived and not persisted to durable storage in this scope.
+
+### Audit metadata shape (snake_case)
+
+- `audit_id` (deterministic SHA-256 hash of canonical import boundary identity)
+- `batch_id`
+- `contract_version`
+- `source_system`
+- `source_family`
+- `source_provider`
+- `publication`
+- `publication_version`
+- `parser_name` (nullable)
+- `parser_version` (nullable)
+- `parser_run_id` (nullable)
+- `generated_at_utc` (nullable)
+- `evaluated_at_utc` (nullable; currently mirrors parser `generated_at_utc` when present)
+
+### Determinism policy
+
+- `audit_id` is deterministic for equivalent boundary inputs and changes when key source identity fields change (for example `batch_id` or `publication_version`).
+- No random identifiers are used.
+- No runtime persistence or import execution is introduced.
+
+### Non-goals preserved
+
+- No persistence/import execution yet.
+- No durable audit storage in this task.
+- No auth in this task (SEC-001 remains separate).
+- No tenant scoping in this task (SEC-002 remains separate).
