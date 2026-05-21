@@ -37,6 +37,7 @@ public static class CarbonFactorServiceCollectionExtensions
             services.AddSingleton<ICarbonOpsTransactionBoundary, NoOpCarbonOpsTransactionBoundary>();
         }
         services.AddScoped<CarbonFactorUseCases>();
+        services.AddScoped<CarbonFactorImportBoundaryService>();
 
         return services;
     }

@@ -99,3 +99,14 @@ Notes:
 - No DB writes are added by this task.
 - SEC-001 will introduce API key authentication baseline.
 - Data correctness/provenance enforcement remains a future controlled ingestion validation concern.
+
+
+## Carbon factor import boundary (ING-002)
+
+- `POST /carbon-factors/import` accepts `ParserCarbonFactorBatchImportRequest` from `CarbonOps.Contracts`.
+- The endpoint validates boundary shape and returns deterministic responses.
+- Valid boundary requests return `202 Accepted` and `persisted=false` with `import_execution="not_started"`.
+- Invalid boundary requests return `invalid_query` errors.
+- This boundary does **not** persist data yet; no database write/import execution occurs in ING-002.
+- SEC-001 will add API key authentication.
+- Future ING tasks will implement import execution and persistence.

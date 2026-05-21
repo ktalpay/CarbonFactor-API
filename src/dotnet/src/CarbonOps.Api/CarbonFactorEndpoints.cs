@@ -43,6 +43,9 @@ internal static class CarbonFactorEndpoints
                 CarbonFactorEndpointExamples.GetFactorByIdSuccess,
                 CarbonFactorEndpointExamples.GetFactorByIdNotFound);
 
+        group.MapPost("/import", (ParserCarbonFactorBatchImportRequest request, CarbonFactorImportBoundaryService boundaryService) =>
+            ImportCarbonFactors(request, boundaryService));
+
         return endpoints;
     }
 
@@ -74,6 +77,14 @@ internal static class CarbonFactorEndpoints
                     queryRequest.Pagination,
                     queryRequest.RequestedFilterNames)
                 .GetValueOrThrow());
+    }
+
+    private static IResult ImportCarbonFactors(
+        ParserCarbonFactorBatchImportRequest request,
+        CarbonFactorImportBoundaryService boundaryService)
+    {
+        var result = boundaryService.ValidateAndAccept(request).GetValueOrThrow();
+        return TypedResults.Accepted($"/carbon-factors/import/{result.BatchId}", result);
     }
 
     private static ApplicationResult<FactorSearchRequest> TryBuildFactorQuery(IQueryCollection queryCollection)
