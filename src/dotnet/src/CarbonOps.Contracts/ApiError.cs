@@ -22,4 +22,12 @@ public sealed record ApiError(
             "Invalid query",
             new Dictionary<string, object> { ["reason"] = reason });
     }
+
+    public static ApiError Unauthorized(string reason)
+    {
+        return new ApiError(
+            "unauthorized",
+            "Unauthorized",
+            new Dictionary<string, object> { ["reason"] = reason });
+    }
 }
