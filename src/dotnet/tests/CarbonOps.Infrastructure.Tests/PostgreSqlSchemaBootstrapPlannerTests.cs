@@ -49,7 +49,19 @@ public sealed class PostgreSqlSchemaBootstrapPlannerTests
 
     private static string GetInfrastructureProjectRoot()
     {
-        var testBasePath = AppContext.BaseDirectory;
-        return Path.GetFullPath(Path.Combine(testBasePath, "../../../../src/CarbonOps.Infrastructure"));
+        var current = new DirectoryInfo(AppContext.BaseDirectory);
+
+        while (current is not null)
+        {
+            var candidate = Path.Combine(current.FullName, "src", "CarbonOps.Infrastructure", "CarbonOps.Infrastructure.csproj");
+            if (File.Exists(candidate))
+            {
+                return Path.GetDirectoryName(candidate)!;
+            }
+
+            current = current.Parent;
+        }
+
+        throw new InvalidOperationException("Could not resolve CarbonOps.Infrastructure project root from test base directory.");
     }
 }
