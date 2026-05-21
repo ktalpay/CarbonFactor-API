@@ -232,6 +232,9 @@ Each validation message now uses deterministic shape:
 
 ## Import audit trail (ING-006)
 
+See also: `docs/ingestion-production-readiness.md` for ING-007 production-readiness findings and handoff risks.
+
+
 - `POST /carbon-factors/import` now includes deterministic boundary-level audit metadata under `audit` while remaining boundary-only (`persisted=false`, `import_execution="not_started"`).
 - Audit metadata is request-derived and not persisted to durable storage in this scope.
 
