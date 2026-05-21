@@ -3,6 +3,7 @@ using Npgsql;
 
 namespace CarbonOps.Infrastructure.Tests;
 
+[Collection("PostgreSqlIntegration")]
 public sealed class EfCoreCarbonOpsTransactionBoundaryPostgreSqlIntegrationTests
 {
     private const string TestDsnEnvVar = "CARBONOPS_POSTGRESQL_TEST_DSN";
