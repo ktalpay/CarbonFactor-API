@@ -1,13 +1,34 @@
-# PostgreSQL schema baseline (DB-001)
+# PostgreSQL schema baseline and bootstrap strategy (DB-004)
 
-This folder contains a **reviewable SQL baseline** for carbon factor persistence.
+This folder contains a **reviewable SQL baseline** and deterministic manifest for carbon factor persistence.
 
-## File
+## Files
 
-- `001_carbon_factor_schema.sql`: creates `carbonops.carbon_factors` and supporting indexes.
+- `schema-manifest.txt`: canonical ordered list of schema SQL scripts.
+- `001_carbon_factor_schema.sql`: baseline schema script that creates `carbonops.carbon_factors` and supporting indexes.
 
-## Notes
+## Migration/bootstrap strategy
 
-- Runtime API behavior is unchanged: this schema is not wired into application startup.
-- SQL uses `IF NOT EXISTS` guards and is non-destructive.
-- `factor_id` maps to the existing factor identity used in API/domain contracts.
+- Runtime API startup **does not** execute schema SQL.
+- Schema scripts are discovered through `schema-manifest.txt` in listed order.
+- `PostgreSqlSchemaBootstrapPlanner` can be invoked explicitly by future tooling/CLI/tests to build an ordered application plan.
+- `PostgreSqlSchemaSafetyValidator` rejects scripts containing destructive SQL tokens (`DROP`, `TRUNCATE`, `DELETE`, or `ALTER TABLE`).
+
+## Local/dev usage
+
+- Review SQL files and manifest in pull requests.
+- Invoke planner/validator from explicit tooling or test harnesses to inspect what would be applied.
+- Apply SQL to local PostgreSQL manually or through future dedicated migration tooling (not part of this task).
+
+## Production safety assumptions
+
+- This baseline is designed for explicit, review-first application workflows.
+- No automatic runtime mutation is wired into API startup.
+- Production rollout should use controlled deployment steps with peer review and change approval.
+
+## What DB-004 does not do
+
+- No EF-generated migrations are introduced.
+- No startup calls to `Database.Migrate()` or `Database.EnsureCreated()` are added.
+- No seed/reference data strategy is included.
+- No destructive schema operations are introduced.
