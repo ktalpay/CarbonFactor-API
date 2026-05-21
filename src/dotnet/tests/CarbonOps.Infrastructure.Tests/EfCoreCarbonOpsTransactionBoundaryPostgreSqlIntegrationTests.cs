@@ -6,6 +6,8 @@ namespace CarbonOps.Infrastructure.Tests;
 public sealed class EfCoreCarbonOpsTransactionBoundaryPostgreSqlIntegrationTests
 {
     private const string TestDsnEnvVar = "CARBONOPS_POSTGRESQL_TEST_DSN";
+    private static readonly SemaphoreSlim SchemaBootstrapLock = new(1, 1);
+    private static bool _baselineSchemaApplied;
 
     [Fact]
     public async Task ExecuteAsync_CommitsInsertedRows_WhenOperationSucceeds()
@@ -16,10 +18,12 @@ public sealed class EfCoreCarbonOpsTransactionBoundaryPostgreSqlIntegrationTests
             return;
         }
 
-        await using var setupConnection = await dataSource.OpenConnectionAsync();
-        ApplyBaselineSchema(setupConnection);
+        await EnsureBaselineSchemaAppliedAsync(dataSource);
 
-        var factorId = $"it-txn-commit-{Guid.NewGuid():N}";
+        var uniqueSuffix = Guid.NewGuid().ToString("N");
+        var factorId = $"it-txn-commit-{uniqueSuffix}";
+        var activity = $"grid electricity {uniqueSuffix}";
+        var region = $"US-EAST-{uniqueSuffix[..8]}";
 
         await using (var dbContext = CreateDbContext(dataSource))
         {
@@ -31,10 +35,10 @@ public sealed class EfCoreCarbonOpsTransactionBoundaryPostgreSqlIntegrationTests
                         factorId,
                         "integration-test",
                         "electricity",
-                        "grid electricity",
+                        activity,
                         0.222m,
                         "kgCO2e/unit",
-                        "US-EAST",
+                        region,
                         2025,
                         "txn commit"),
                     cancellationToken);
@@ -58,10 +62,12 @@ public sealed class EfCoreCarbonOpsTransactionBoundaryPostgreSqlIntegrationTests
             return;
         }
 
-        await using var setupConnection = await dataSource.OpenConnectionAsync();
-        ApplyBaselineSchema(setupConnection);
+        await EnsureBaselineSchemaAppliedAsync(dataSource);
 
-        var factorId = $"it-txn-rollback-{Guid.NewGuid():N}";
+        var uniqueSuffix = Guid.NewGuid().ToString("N");
+        var factorId = $"it-txn-rollback-{uniqueSuffix}";
+        var activity = $"rail {uniqueSuffix}";
+        var region = $"US-{uniqueSuffix[..8]}";
 
         await using (var dbContext = CreateDbContext(dataSource))
         {
@@ -75,10 +81,10 @@ public sealed class EfCoreCarbonOpsTransactionBoundaryPostgreSqlIntegrationTests
                             factorId,
                             "integration-test",
                             "transport",
-                            "rail",
+                            activity,
                             0.333m,
                             "kgCO2e/unit",
-                            "US",
+                            region,
                             2024,
                             "txn rollback"),
                         cancellationToken);
@@ -121,6 +127,26 @@ public sealed class EfCoreCarbonOpsTransactionBoundaryPostgreSqlIntegrationTests
             .Options;
 
         return new CarbonOpsDbContext(options);
+    }
+
+    private static async Task EnsureBaselineSchemaAppliedAsync(NpgsqlDataSource dataSource)
+    {
+        await SchemaBootstrapLock.WaitAsync();
+        try
+        {
+            if (_baselineSchemaApplied)
+            {
+                return;
+            }
+
+            await using var setupConnection = await dataSource.OpenConnectionAsync();
+            ApplyBaselineSchema(setupConnection);
+            _baselineSchemaApplied = true;
+        }
+        finally
+        {
+            SchemaBootstrapLock.Release();
+        }
     }
 
     private static void ApplyBaselineSchema(NpgsqlConnection connection)
