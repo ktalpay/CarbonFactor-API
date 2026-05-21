@@ -183,8 +183,8 @@ public sealed class CarbonFactorImportBoundaryServiceTests
         var result = service.ValidateAndAccept(CreateRequest() with { Factors = [invalid0, valid, invalid2] });
 
         Assert.True(result.IsSuccess);
-        Assert.Equal([0, 2, 2, 2], result.Value!.Errors.Select(e => e.RowIndex));
-        Assert.Equal(["external_factor_id", "external_factor_id", "factor_identity", "factor_unit"], result.Value.Errors.Select(e => e.Field));
+        Assert.Equal([0, 0, 2, 2], result.Value!.Errors.Select(e => e.RowIndex));
+        Assert.Equal(["external_factor_id", "factor_unit", "external_factor_id", "factor_identity"], result.Value.Errors.Select(e => e.Field));
         Assert.Equal([1], result.Value.Warnings.Select(w => w.RowIndex));
     }
 
