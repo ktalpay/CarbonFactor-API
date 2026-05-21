@@ -29,10 +29,12 @@ public static class CarbonFactorServiceCollectionExtensions
 
             services.AddDbContext<CarbonOpsDbContext>(dbOptions => dbOptions.UseNpgsql(options.ConnectionString));
             services.AddScoped<ICarbonFactorRepository, EfCoreCarbonFactorRepository>();
+            services.AddScoped<ICarbonOpsTransactionBoundary, EfCoreCarbonOpsTransactionBoundary>();
         }
         else
         {
             services.AddSingleton<ICarbonFactorRepository, InMemoryCarbonFactorRepository>();
+            services.AddSingleton<ICarbonOpsTransactionBoundary, NoOpCarbonOpsTransactionBoundary>();
         }
         services.AddScoped<CarbonFactorUseCases>();
 
