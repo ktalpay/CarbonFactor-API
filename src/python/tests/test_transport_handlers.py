@@ -1,4 +1,9 @@
-from carbonops_api.transport.handlers import handle_get_factor, handle_list_factors
+from carbonops_api.contracts import (
+    ParserCarbonFactorBatchImportRequest,
+    ParserCarbonFactorImportItem,
+    ParserSourceMetadataDto,
+)
+from carbonops_api.transport.handlers import handle_get_factor, handle_import_carbon_factors, handle_list_factors
 
 
 def test_list_handler_success() -> None:
@@ -46,3 +51,26 @@ def test_invalid_query_maps_to_error_status() -> None:
 def test_output_envelope_is_deterministic() -> None:
     payload = handle_list_factors({}).to_dict()
     assert list(payload.keys()) == ["status", "data", "error"]
+
+
+def test_import_boundary_success() -> None:
+    payload = handle_import_carbon_factors(
+        ParserCarbonFactorBatchImportRequest(
+            contract_version="1.0",
+            batch_id="batch-1",
+            source=ParserSourceMetadataDto(source_family="epa", source_provider="us"),
+            factors=[
+                ParserCarbonFactorImportItem(
+                    external_factor_id="id-1",
+                    source_family="epa",
+                    source_provider="us",
+                    category="electricity",
+                    activity="grid",
+                    factor_value=0.1,
+                    factor_unit="kgCO2e/kWh",
+                )
+            ],
+        )
+    ).to_dict()
+    assert payload["status"] == 202
+    assert payload["data"]["persisted"] is False

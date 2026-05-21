@@ -3,8 +3,9 @@
 from carbonops_api.application import get_factor_by_id as _get_factor_by_id
 from carbonops_api.application import list_factors as _list_factors
 from carbonops_api.application import search_factors as _search_factors
+from carbonops_api.application import validate_import_boundary as _validate_import_boundary
 from carbonops_api.application import FactorRepository
-from carbonops_api.contracts import ApiError, FactorQuery
+from carbonops_api.contracts import ApiError, CarbonFactorImportBoundaryResponse, FactorQuery, ParserCarbonFactorBatchImportRequest
 from carbonops_api.domain import FactorDto
 from carbonops_api.infrastructure import InMemoryFactorRepository
 
@@ -27,3 +28,7 @@ def search_factors(
     repository: FactorRepository | None = None,
 ) -> list[FactorDto] | ApiError:
     return _search_factors(repository or default_factor_repository(), query, extra_filters)
+
+
+def validate_import_boundary(request: ParserCarbonFactorBatchImportRequest) -> CarbonFactorImportBoundaryResponse | ApiError:
+    return _validate_import_boundary(request)

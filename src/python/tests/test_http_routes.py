@@ -86,3 +86,64 @@ def test_multiple_unsupported_query_params_are_sorted_deterministically() -> Non
     assert payload["status"] == 400
     assert payload["error"]["code"] == "invalid_query"
     assert payload["error"]["details"] == {"unsupported_query_keys": ["alpha", "zeta"]}
+
+
+def test_import_boundary_valid_request_returns_accepted_not_persisted() -> None:
+    client = TestClient(create_app())
+    request = {
+        "contract_version": "1.0",
+        "batch_id": "batch-001",
+        "source": {"source_family": "epa", "source_provider": "us"},
+        "factors": [
+            {
+                "external_factor_id": "ef-1",
+                "source_family": "epa",
+                "source_provider": "us",
+                "category": "electricity",
+                "activity": "grid",
+                "factor_value": 0.45,
+                "factor_unit": "kgCO2e/kWh",
+            }
+        ],
+    }
+    response = client.post("/carbon-factors/import", json=request)
+    payload = response.json()
+    assert response.status_code == 202
+    assert payload["data"]["persisted"] is False
+    assert payload["data"]["import_execution"] == "not_started"
+
+
+def test_import_boundary_empty_factors_returns_invalid_query() -> None:
+    client = TestClient(create_app())
+    request = {
+        "contract_version": "1.0",
+        "batch_id": "batch-001",
+        "source": {"source_family": "epa", "source_provider": "us"},
+        "factors": [],
+    }
+    response = client.post("/carbon-factors/import", json=request)
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "invalid_query"
+
+
+def test_import_boundary_missing_required_field_returns_invalid_query() -> None:
+    client = TestClient(create_app())
+    request = {
+        "contract_version": "1.0",
+        "batch_id": "batch-001",
+        "source": {"source_family": "epa", "source_provider": "us"},
+        "factors": [
+            {
+                "external_factor_id": "",
+                "source_family": "epa",
+                "source_provider": "us",
+                "category": "electricity",
+                "activity": "grid",
+                "factor_value": 0.45,
+                "factor_unit": "kgCO2e/kWh",
+            }
+        ],
+    }
+    response = client.post("/carbon-factors/import", json=request)
+    assert response.status_code == 400
+    assert response.json()["error"]["code"] == "invalid_query"

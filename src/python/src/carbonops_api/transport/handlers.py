@@ -1,7 +1,13 @@
 """Local transport handlers that emulate route behavior without a server."""
 
-from carbonops_api.composition import get_factor_by_id, search_factors
-from carbonops_api.contracts import ApiError, FactorDetailResponse, FactorListResponse, FactorQuery
+from carbonops_api.composition import get_factor_by_id, search_factors, validate_import_boundary
+from carbonops_api.contracts import (
+    ApiError,
+    FactorDetailResponse,
+    FactorListResponse,
+    FactorQuery,
+    ParserCarbonFactorBatchImportRequest,
+)
 from carbonops_api.transport.envelope import ErrorEnvelope, ResponseEnvelope
 from carbonops_api.transport.serialization import (
     serialize_detail_response,
@@ -41,6 +47,13 @@ def handle_get_factor(factor_id: str) -> ResponseEnvelope:
 
     response = FactorDetailResponse(factor=result)
     return ResponseEnvelope(status=HTTP_OK, data=serialize_detail_response(response))
+
+
+def handle_import_carbon_factors(request: ParserCarbonFactorBatchImportRequest) -> ResponseEnvelope:
+    result = validate_import_boundary(request)
+    if isinstance(result, ApiError):
+        return _error_response(result)
+    return ResponseEnvelope(status=202, data=result.to_dict())
 
 
 def _error_response(error: ApiError) -> ResponseEnvelope:

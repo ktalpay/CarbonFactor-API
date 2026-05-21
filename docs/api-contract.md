@@ -95,7 +95,55 @@ Contract types:
 
 Notes:
 - This is contract-only scope for ING-001.
-- No ingestion endpoint exists yet; endpoint boundary is planned for ING-002.
+- Ingestion endpoint boundary now exists at `POST /carbon-factors/import` (ING-002).
 - No DB writes are added by this task.
 - SEC-001 will introduce API key authentication baseline.
 - Data correctness/provenance enforcement remains a future controlled ingestion validation concern.
+
+
+## Carbon factor import endpoint boundary (ING-002)
+
+- Endpoint: `POST /carbon-factors/import`
+- Request contract: `ParserCarbonFactorBatchImportRequest` (`snake_case` fields).
+- Boundary behavior: validates request shape and required fields, but does **not** persist records yet.
+- Response includes `batch_id`, accepted/rejected counts, warnings, and explicit non-persistence flags (`persisted=false`, `import_execution=not_started`).
+- Current auth status: no API key auth yet (planned in SEC-001).
+- Full import execution/persistence and deeper provenance rules are deferred to future ingestion tasks.
+
+Example request:
+```json
+{
+  "contract_version": "1.0",
+  "batch_id": "batch-001",
+  "source": {"source_family": "epa", "source_provider": "us"},
+  "factors": [
+    {
+      "external_factor_id": "ef-1",
+      "source_family": "epa",
+      "source_provider": "us",
+      "category": "electricity",
+      "activity": "grid",
+      "factor_value": 0.45,
+      "factor_unit": "kgCO2e/kWh"
+    }
+  ]
+}
+```
+
+Example response:
+```json
+{
+  "status": 202,
+  "data": {
+    "batch_id": "batch-001",
+    "accepted_records": 1,
+    "rejected_records": 0,
+    "status": "accepted_for_validation_boundary",
+    "persisted": false,
+    "import_execution": "not_started",
+    "warnings": [],
+    "errors": []
+  },
+  "error": null
+}
+```
