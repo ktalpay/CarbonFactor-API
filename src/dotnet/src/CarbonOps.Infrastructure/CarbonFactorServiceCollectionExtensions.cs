@@ -9,6 +9,10 @@ public static class CarbonFactorServiceCollectionExtensions
 {
     public static IServiceCollection AddCarbonFactorServices(this IServiceCollection services, IConfiguration? configuration = null)
     {
+        services.AddSingleton<IPostgreSqlSchemaScriptCatalog, PostgreSqlSchemaScriptCatalog>();
+        services.AddSingleton<PostgreSqlSchemaSafetyValidator>();
+        services.AddSingleton<IPostgreSqlSchemaBootstrapPlanner, PostgreSqlSchemaBootstrapPlanner>();
+
         var usePostgreSql = configuration?.GetValue<bool>("Persistence:UsePostgreSql") ?? false;
 
         if (usePostgreSql)
