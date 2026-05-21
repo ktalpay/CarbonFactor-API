@@ -83,7 +83,18 @@ public sealed class CarbonFactorImportBoundaryService
             errors.AddRange(rowErrors);
         }
 
-        var rejectedRows = errors.Select(e => e.RowIndex).Distinct().Count();
+        var orderedWarnings = warnings
+            .OrderBy(w => w.RowIndex)
+            .ThenBy(w => w.Field, StringComparer.Ordinal)
+            .ThenBy(w => w.Code, StringComparer.Ordinal)
+            .ToArray();
+        var orderedErrors = errors
+            .OrderBy(e => e.RowIndex)
+            .ThenBy(e => e.Field, StringComparer.Ordinal)
+            .ThenBy(e => e.Code, StringComparer.Ordinal)
+            .ToArray();
+
+        var rejectedRows = orderedErrors.Select(e => e.RowIndex).Distinct().Count();
         var acceptedRows = request.Factors.Count - rejectedRows;
 
         if (acceptedRows == 0)
@@ -91,16 +102,28 @@ public sealed class CarbonFactorImportBoundaryService
             return Invalid("no valid factor rows remain after validation");
         }
 
+        var validationStatus = rejectedRows > 0
+            ? "accepted_with_validation_errors"
+            : orderedWarnings.Length > 0
+                ? "accepted_with_warnings"
+                : "accepted";
+
         return ApplicationResult<CarbonFactorImportBoundaryResponse>.Success(
             new CarbonFactorImportBoundaryResponse(
                 request.BatchId,
                 acceptedRows,
                 rejectedRows,
-                rejectedRows == 0 ? "accepted_boundary_only" : "accepted_with_validation_errors",
+                validationStatus,
+                validationStatus,
+                request.Factors.Count,
+                orderedWarnings.Length,
+                orderedErrors.Length,
+                orderedWarnings.Length > 0,
+                orderedErrors.Length > 0,
                 false,
                 "not_started",
-                warnings,
-                errors));
+                orderedWarnings,
+                orderedErrors));
     }
 
 

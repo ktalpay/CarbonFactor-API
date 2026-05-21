@@ -272,6 +272,14 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+        Assert.Equal(1, payload.GetProperty("total_records").GetInt32());
+        Assert.Equal(1, payload.GetProperty("accepted_records").GetInt32());
+        Assert.Equal(0, payload.GetProperty("rejected_records").GetInt32());
+        Assert.Equal(0, payload.GetProperty("warning_count").GetInt32());
+        Assert.Equal(0, payload.GetProperty("error_count").GetInt32());
+        Assert.Equal("accepted", payload.GetProperty("validation_status").GetString());
+        Assert.False(payload.GetProperty("has_warnings").GetBoolean());
+        Assert.False(payload.GetProperty("has_errors").GetBoolean());
         Assert.False(payload.GetProperty("persisted").GetBoolean());
         Assert.Equal("not_started", payload.GetProperty("import_execution").GetString());
     }
@@ -290,9 +298,15 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+        Assert.Equal(2, payload.GetProperty("total_records").GetInt32());
         Assert.Equal(1, payload.GetProperty("accepted_records").GetInt32());
         Assert.Equal(1, payload.GetProperty("rejected_records").GetInt32());
+        Assert.Equal(0, payload.GetProperty("warning_count").GetInt32());
+        Assert.Equal(1, payload.GetProperty("error_count").GetInt32());
         Assert.Equal("accepted_with_validation_errors", payload.GetProperty("status").GetString());
+        Assert.Equal("accepted_with_validation_errors", payload.GetProperty("validation_status").GetString());
+        Assert.False(payload.GetProperty("has_warnings").GetBoolean());
+        Assert.True(payload.GetProperty("has_errors").GetBoolean());
         Assert.True(payload.GetProperty("errors").GetArrayLength() > 0);
         Assert.False(payload.GetProperty("persisted").GetBoolean());
         Assert.Equal("not_started", payload.GetProperty("import_execution").GetString());

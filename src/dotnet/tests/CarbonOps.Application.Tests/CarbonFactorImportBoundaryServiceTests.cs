@@ -15,6 +15,13 @@ public sealed class CarbonFactorImportBoundaryServiceTests
         Assert.True(result.IsSuccess);
         Assert.Equal(1, result.Value!.AcceptedRecords);
         Assert.Equal(0, result.Value.RejectedRecords);
+        Assert.Equal("accepted", result.Value.Status);
+        Assert.Equal("accepted", result.Value.ValidationStatus);
+        Assert.Equal(1, result.Value.TotalRecords);
+        Assert.Equal(0, result.Value.WarningCount);
+        Assert.Equal(0, result.Value.ErrorCount);
+        Assert.False(result.Value.HasWarnings);
+        Assert.False(result.Value.HasErrors);
         Assert.False(result.Value.Persisted);
         Assert.Equal("not_started", result.Value.ImportExecution);
     }
@@ -134,6 +141,14 @@ public sealed class CarbonFactorImportBoundaryServiceTests
 
         Assert.True(result.IsSuccess);
         Assert.Single(result.Value!.Warnings);
+        Assert.Equal("accepted_with_warnings", result.Value.Status);
+        Assert.Equal(result.Value.Status, result.Value.ValidationStatus);
+        Assert.Equal(2, result.Value.AcceptedRecords);
+        Assert.Equal(0, result.Value.RejectedRecords);
+        Assert.Equal(1, result.Value.WarningCount);
+        Assert.Equal(0, result.Value.ErrorCount);
+        Assert.True(result.Value.HasWarnings);
+        Assert.False(result.Value.HasErrors);
         Assert.Equal("source_mismatch", result.Value.Warnings[0].Code);
     }
 
@@ -149,6 +164,28 @@ public sealed class CarbonFactorImportBoundaryServiceTests
         Assert.Equal(1, result.Value!.AcceptedRecords);
         Assert.Equal(1, result.Value.RejectedRecords);
         Assert.Equal("accepted_with_validation_errors", result.Value.Status);
+        Assert.Equal(result.Value.Status, result.Value.ValidationStatus);
+        Assert.Equal(2, result.Value.TotalRecords);
+        Assert.Equal(0, result.Value.WarningCount);
+        Assert.Equal(1, result.Value.ErrorCount);
+        Assert.False(result.Value.HasWarnings);
+        Assert.True(result.Value.HasErrors);
+    }
+
+
+    [Fact]
+    public void ValidateAndAcceptReturnsDeterministicMessageOrdering()
+    {
+        var invalid0 = CreateFactor("dup") with { FactorUnit = " ", ExternalFactorId = " " };
+        var valid = CreateFactor("ok-1") with { SourceFamily = "transport" };
+        var invalid2 = CreateFactor("dup") with { FactorUnit = " " };
+
+        var result = service.ValidateAndAccept(CreateRequest() with { Factors = [invalid0, valid, invalid2] });
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal([0, 2, 2, 2], result.Value!.Errors.Select(e => e.RowIndex));
+        Assert.Equal(["external_factor_id", "external_factor_id", "factor_identity", "factor_unit"], result.Value.Errors.Select(e => e.Field));
+        Assert.Equal([1], result.Value.Warnings.Select(w => w.RowIndex));
     }
 
     [Fact]
