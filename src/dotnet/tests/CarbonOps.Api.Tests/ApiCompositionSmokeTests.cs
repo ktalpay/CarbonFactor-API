@@ -49,6 +49,7 @@ public sealed class ApiCompositionSmokeTests : IClassFixture<WebApplicationFacto
                 "/health/ready",
                 "/version",
                 "/carbon-factors",
+                "/carbon-factors/import",
                 "/carbon-factors/search",
                 "/carbon-factors/{factorId}"
             },
