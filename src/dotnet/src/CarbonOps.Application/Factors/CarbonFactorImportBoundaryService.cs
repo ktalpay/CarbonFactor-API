@@ -148,7 +148,9 @@ public sealed class CarbonFactorImportBoundaryService
             parser?.ParserVersion,
             parser?.ParserRunId,
             parser?.GeneratedAtUtc,
-            parser?.GeneratedAtUtc);
+            parser?.GeneratedAtUtc,
+            "unscoped",
+            "none");
     }
 
     private static string BuildAuditId(ParserCarbonFactorBatchImportRequest request, string? parserRunId)

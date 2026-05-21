@@ -33,7 +33,9 @@ public sealed record CarbonFactorImportBoundaryAuditMetadata(
     [property: JsonPropertyName("parser_version")] string? ParserVersion,
     [property: JsonPropertyName("parser_run_id")] string? ParserRunId,
     [property: JsonPropertyName("generated_at_utc")] DateTimeOffset? GeneratedAtUtc,
-    [property: JsonPropertyName("evaluated_at_utc")] DateTimeOffset? EvaluatedAtUtc);
+    [property: JsonPropertyName("evaluated_at_utc")] DateTimeOffset? EvaluatedAtUtc,
+    [property: JsonPropertyName("tenant_id")] string TenantId,
+    [property: JsonPropertyName("authentication_scheme")] string AuthenticationScheme);
 
 public sealed record CarbonFactorImportValidationMessage(
     [property: JsonPropertyName("row_index")] int RowIndex,

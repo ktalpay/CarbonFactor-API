@@ -12,6 +12,7 @@ namespace CarbonOps.Api.Tests;
 public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
 {
     private const string TestApiKey = "test-import-api-key";
+    private const string TestTenantId = "tenant-dev-001";
     private readonly HttpClient client;
     private readonly WebApplicationFactory<Program> factory;
 
@@ -24,7 +25,8 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
             {
                 configuration.AddInMemoryCollection(new Dictionary<string, string?>
                 {
-                    ["Security:ApiKey:ImportEndpointKey"] = TestApiKey
+                    ["Security:ApiKey:ImportEndpointKey"] = TestApiKey,
+                    ["Security:ApiKey:ImportTenantId"] = TestTenantId
                 });
             });
         });
@@ -307,6 +309,40 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
         Assert.DoesNotContain("invalid-key", responseBody, StringComparison.Ordinal);
     }
 
+
+    [Fact]
+    public async Task ImportCarbonFactorsReturnsUnauthorizedWhenTenantConfigIsMissing()
+    {
+        using var tenantlessFactory = factory.WithWebHostBuilder(builder =>
+        {
+            builder.UseEnvironment("Testing");
+            builder.ConfigureAppConfiguration((_, configuration) =>
+            {
+                configuration.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["Security:ApiKey:ImportEndpointKey"] = TestApiKey,
+                    ["Security:ApiKey:ImportTenantId"] = string.Empty
+                });
+            });
+        });
+
+        using var tenantlessClient = tenantlessFactory.CreateClient();
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/carbon-factors/import")
+        {
+            Content = JsonContent.Create(CreateValidImportRequest())
+        };
+        request.Headers.TryAddWithoutValidation("X-Api-Key", TestApiKey);
+
+        var response = await tenantlessClient.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        var responseBody = await response.Content.ReadAsStringAsync();
+        var payload = JsonDocument.Parse(responseBody).RootElement;
+        AssertErrorShape(payload, "unauthorized", "Unauthorized");
+        Assert.Equal("import tenant is not configured", payload.GetProperty("details").GetProperty("reason").GetString());
+        Assert.DoesNotContain(TestApiKey, responseBody, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task ImportCarbonFactorsReturnsAcceptedBoundaryResponseForValidRequest()
     {
@@ -321,6 +357,8 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
         Assert.Equal(0, payload.GetProperty("error_count").GetInt32());
         Assert.Equal("accepted", payload.GetProperty("validation_status").GetString());
         Assert.Equal("batch-1", payload.GetProperty("audit").GetProperty("batch_id").GetString());
+        Assert.Equal(TestTenantId, payload.GetProperty("audit").GetProperty("tenant_id").GetString());
+        Assert.Equal("api_key", payload.GetProperty("audit").GetProperty("authentication_scheme").GetString());
         Assert.False(payload.GetProperty("has_warnings").GetBoolean());
         Assert.False(payload.GetProperty("has_errors").GetBoolean());
         Assert.False(payload.GetProperty("persisted").GetBoolean());

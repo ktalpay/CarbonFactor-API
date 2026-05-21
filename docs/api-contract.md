@@ -279,3 +279,19 @@ See also: `docs/ingestion-production-readiness.md` for ING-007 production-readin
 - `appsettings.Development.json` may contain an obvious non-production placeholder for local/testing only.
 - Tenant/company scoping is not implemented in SEC-001; planned for SEC-002.
 - This baseline is authentication only and does not provide tenant isolation or role/scope authorization.
+
+## Import tenant/company scoping (SEC-002)
+
+- `POST /carbon-factors/import` remains protected by `X-Api-Key`.
+- Import authentication remains configuration-driven, and now requires both:
+  - `Security:ApiKey:ImportEndpointKey`
+  - `Security:ApiKey:ImportTenantId`
+- A valid import API key resolves deterministic tenant identity from configuration (no DB lookup).
+- If tenant configuration is missing, the import endpoint fails closed with deterministic `401 unauthorized`.
+- Accepted import boundary responses now include tenant scoping metadata in `audit`:
+  - `tenant_id`
+  - `authentication_scheme` (`"api_key"`)
+- Tenant scoping is boundary metadata only in SEC-002:
+  - no DB-backed token/tenant management,
+  - no import persistence/execution,
+  - no read endpoint scoping/filtering yet.
