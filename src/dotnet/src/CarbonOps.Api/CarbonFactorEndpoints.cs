@@ -86,31 +86,46 @@ internal static class CarbonFactorEndpoints
         CarbonFactorImportBoundaryService boundaryService,
         ApiKeyAuthenticationOptions apiKeyOptions)
     {
-        EnsureAuthorized(httpRequest, apiKeyOptions).ThrowIfError();
+        var importAuthContext = EnsureAuthorized(httpRequest, apiKeyOptions).GetValueOrThrow();
 
         var result = boundaryService.ValidateAndAccept(request).GetValueOrThrow();
-        return TypedResults.Accepted($"/carbon-factors/import/{result.BatchId}", result);
+        var scopedResult = result with
+        {
+            Audit = result.Audit with
+            {
+                TenantId = importAuthContext.TenantId,
+                AuthenticationScheme = importAuthContext.AuthenticationScheme
+            }
+        };
+
+        return TypedResults.Accepted($"/carbon-factors/import/{scopedResult.BatchId}", scopedResult);
     }
 
-    private static ApiError? EnsureAuthorized(HttpRequest request, ApiKeyAuthenticationOptions options)
+    private static ApplicationResult<ImportAuthenticationContext> EnsureAuthorized(HttpRequest request, ApiKeyAuthenticationOptions options)
     {
         if (string.IsNullOrWhiteSpace(options.ImportEndpointKey))
         {
-            return ApiError.Unauthorized("import endpoint API key is not configured");
+            return ApplicationResult<ImportAuthenticationContext>.Failure(ApiError.Unauthorized("import endpoint API key is not configured"));
         }
 
         if (!request.Headers.TryGetValue(ApiKeyAuthenticationOptions.HeaderName, out var providedApiKey)
             || string.IsNullOrWhiteSpace(providedApiKey))
         {
-            return ApiError.Unauthorized("missing API key");
+            return ApplicationResult<ImportAuthenticationContext>.Failure(ApiError.Unauthorized("missing API key"));
         }
 
         if (!string.Equals(providedApiKey.ToString(), options.ImportEndpointKey, StringComparison.Ordinal))
         {
-            return ApiError.Unauthorized("invalid API key");
+            return ApplicationResult<ImportAuthenticationContext>.Failure(ApiError.Unauthorized("invalid API key"));
         }
 
-        return null;
+        if (string.IsNullOrWhiteSpace(options.ImportTenantId))
+        {
+            return ApplicationResult<ImportAuthenticationContext>.Failure(ApiError.Unauthorized("import tenant is not configured"));
+        }
+
+        return ApplicationResult<ImportAuthenticationContext>.Success(
+            new ImportAuthenticationContext(options.ImportTenantId.Trim(), "api_key"));
     }
 
     private static ApplicationResult<FactorSearchRequest> TryBuildFactorQuery(IQueryCollection queryCollection)
@@ -280,6 +295,8 @@ internal static class CarbonFactorEndpoints
     private sealed record FactorListRequest(
         FactorPaginationQuery Query,
         IReadOnlyCollection<string> RequestedFilterNames);
+
+    private sealed record ImportAuthenticationContext(string TenantId, string AuthenticationScheme);
 
     private sealed record FactorSearchRequest(
         FactorQuery Query,

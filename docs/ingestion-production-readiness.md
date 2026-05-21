@@ -142,3 +142,16 @@ Critical scope note:
 ## Merge guidance for ING-007
 
 This review indicates ingestion boundary behavior is consistent and deterministic for current scope and is suitable for controlled integration/security hardening. It is not a claim of end-to-end production readiness.
+
+## SEC-002 update (tenant scoping boundary model)
+
+- Import endpoint security now includes deterministic tenant identity resolution from config.
+- Required configuration for protected import boundary:
+  - `Security:ApiKey:ImportEndpointKey`
+  - `Security:ApiKey:ImportTenantId`
+- Missing tenant configuration fails closed with deterministic `401 unauthorized`.
+- Accepted boundary responses expose tenant context in audit metadata (`tenant_id`, `authentication_scheme`).
+- Scope remains boundary-only:
+  - no DB-backed tenant store,
+  - no import persistence/execution,
+  - no tenant-scoped read filtering.

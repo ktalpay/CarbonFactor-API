@@ -6,4 +6,6 @@ internal sealed class ApiKeyAuthenticationOptions
     public const string HeaderName = "X-Api-Key";
 
     public string? ImportEndpointKey { get; init; }
+
+    public string? ImportTenantId { get; init; }
 }
