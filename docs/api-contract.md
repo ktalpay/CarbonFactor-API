@@ -82,3 +82,20 @@ These are local functions only and are intended to be adapted into a future HTTP
 
 
 See also evidence docs: `docs/evidence/index.md`, `docs/evidence/api-architecture-evidence.md`.
+
+## Parser output ingestion contract (ING-001)
+
+A versioned parser-output ingestion request contract is now defined in `CarbonOps.Contracts` for planned write-side ingestion, with no runtime ingestion behavior enabled in this task.
+
+Contract types:
+- `ParserCarbonFactorBatchImportRequest`
+- `ParserSourceMetadataDto`
+- `ParserCarbonFactorImportItem`
+- `ParserProvenanceMetadataDto`
+
+Notes:
+- This is contract-only scope for ING-001.
+- No ingestion endpoint exists yet; endpoint boundary is planned for ING-002.
+- No DB writes are added by this task.
+- SEC-001 will introduce API key authentication baseline.
+- Data correctness/provenance enforcement remains a future controlled ingestion validation concern.
