@@ -4,6 +4,7 @@ using Npgsql;
 
 namespace CarbonOps.Infrastructure.Tests;
 
+[Collection("PostgreSqlIntegration")]
 public sealed class EfCoreCarbonFactorRepositoryPostgreSqlIntegrationTests
 {
     private const string TestDsnEnvVar = "CARBONOPS_POSTGRESQL_TEST_DSN";
