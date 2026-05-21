@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -265,6 +266,42 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
     }
 
     [Fact]
+    public async Task ImportCarbonFactorsReturnsAcceptedBoundaryResponseForValidRequest()
+    {
+        var response = await client.PostAsJsonAsync("/carbon-factors/import", CreateValidImportRequest());
+
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+        Assert.False(payload.GetProperty("persisted").GetBoolean());
+        Assert.Equal("not_started", payload.GetProperty("import_execution").GetString());
+    }
+
+    [Fact]
+    public async Task ImportCarbonFactorsReturnsInvalidQueryForEmptyFactors()
+    {
+        var request = CreateValidImportRequest();
+        request["factors"] = Array.Empty<object>();
+
+        var response = await client.PostAsJsonAsync("/carbon-factors/import", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+        Assert.Equal("factors must contain at least one item", payload.GetProperty("details").GetProperty("reason").GetString());
+    }
+
+    [Fact]
+    public async Task ImportCarbonFactorsReturnsInvalidQueryForMissingRequiredField()
+    {
+        var request = CreateValidImportRequest();
+        request["batch_id"] = " ";
+
+        var response = await client.PostAsJsonAsync("/carbon-factors/import", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+        Assert.Equal("batch_id is required", payload.GetProperty("details").GetProperty("reason").GetString());
+    }
+
     public async Task HealthEndpointReturnsDeterministicPayload()
     {
         var response = await client.GetAsync("/health");
@@ -399,6 +436,36 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
         }
     }
 
+
+    private static Dictionary<string, object> CreateValidImportRequest()
+    {
+        return new Dictionary<string, object>
+        {
+            ["contract_version"] = "1.0",
+            ["batch_id"] = "batch-1",
+            ["source"] = new Dictionary<string, object>
+            {
+                ["source_system"] = "parser",
+                ["source_family"] = "electricity",
+                ["source_provider"] = "synthetic",
+                ["publication"] = "pub",
+                ["publication_version"] = "v1"
+            },
+            ["factors"] = new object[]
+            {
+                new Dictionary<string, object>
+                {
+                    ["external_factor_id"] = "ext-1",
+                    ["source_family"] = "electricity",
+                    ["source_provider"] = "synthetic",
+                    ["category"] = "electricity",
+                    ["activity"] = "grid",
+                    ["factor_value"] = 0.1m,
+                    ["factor_unit"] = "kg"
+                }
+            }
+        };
+    }
     private static void AssertObjectPropertyNames(JsonElement payload, params string[] expectedPropertyNames)
     {
         var actualPropertyNames = payload
