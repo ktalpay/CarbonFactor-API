@@ -24,10 +24,13 @@ public static class CarbonFactorServiceCollectionExtensions
             }
 
             services.AddDbContext<CarbonOpsDbContext>(dbOptions => dbOptions.UseNpgsql(options.ConnectionString));
+            services.AddScoped<ICarbonFactorRepository, EfCoreCarbonFactorRepository>();
         }
-
-        services.AddSingleton<ICarbonFactorRepository, InMemoryCarbonFactorRepository>();
-        services.AddSingleton<CarbonFactorUseCases>();
+        else
+        {
+            services.AddSingleton<ICarbonFactorRepository, InMemoryCarbonFactorRepository>();
+        }
+        services.AddScoped<CarbonFactorUseCases>();
 
         return services;
     }
