@@ -320,7 +320,8 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
             {
                 configuration.AddInMemoryCollection(new Dictionary<string, string?>
                 {
-                    ["Security:ApiKey:ImportEndpointKey"] = TestApiKey
+                    ["Security:ApiKey:ImportEndpointKey"] = TestApiKey,
+                    ["Security:ApiKey:ImportTenantId"] = string.Empty
                 });
             });
         });
