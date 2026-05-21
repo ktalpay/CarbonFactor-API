@@ -32,10 +32,10 @@ public sealed class EfCoreCarbonOpsTransactionBoundaryPostgreSqlIntegrationTests
                         "integration-test",
                         "electricity",
                         "grid electricity",
-                        "US-EAST",
-                        2025,
                         0.222m,
                         "kgCO2e/unit",
+                        "US-EAST",
+                        2025,
                         "txn commit"),
                     cancellationToken);
             });
@@ -76,10 +76,10 @@ public sealed class EfCoreCarbonOpsTransactionBoundaryPostgreSqlIntegrationTests
                             "integration-test",
                             "transport",
                             "rail",
-                            "US",
-                            2024,
                             0.333m,
                             "kgCO2e/unit",
+                            "US",
+                            2024,
                             "txn rollback"),
                         cancellationToken);
 
