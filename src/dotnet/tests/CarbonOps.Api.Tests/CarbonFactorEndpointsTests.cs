@@ -277,6 +277,28 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
     }
 
     [Fact]
+    public async Task ImportCarbonFactorsReturnsAcceptedForMixedBatchWithValidationErrors()
+    {
+        var request = CreateValidImportRequest();
+        request["factors"] = new object[]
+        {
+            CreateFactor("id-1", "electricity", "synthetic", "electricity", "grid", 1.1m, "kg", 2024),
+            CreateFactor("id-2", "electricity", "synthetic", "electricity", "grid", 1.2m, " ", 2024)
+        };
+
+        var response = await client.PostAsJsonAsync("/carbon-factors/import", request);
+
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+        Assert.Equal(1, payload.GetProperty("accepted_records").GetInt32());
+        Assert.Equal(1, payload.GetProperty("rejected_records").GetInt32());
+        Assert.Equal("accepted_with_validation_errors", payload.GetProperty("status").GetString());
+        Assert.True(payload.GetProperty("errors").GetArrayLength() > 0);
+        Assert.False(payload.GetProperty("persisted").GetBoolean());
+        Assert.Equal("not_started", payload.GetProperty("import_execution").GetString());
+    }
+
+    [Fact]
     public async Task ImportCarbonFactorsReturnsInvalidQueryForEmptyFactors()
     {
         var request = CreateValidImportRequest();
@@ -300,6 +322,22 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
         Assert.Equal("batch_id is required", payload.GetProperty("details").GetProperty("reason").GetString());
+    }
+
+    [Fact]
+    public async Task ImportCarbonFactorsReturnsInvalidQueryWhenZeroValidRowsRemain()
+    {
+        var request = CreateValidImportRequest();
+        request["factors"] = new object[]
+        {
+            CreateFactor("id-1", "electricity", "synthetic", "electricity", "grid", 1.1m, " ", 2024)
+        };
+
+        var response = await client.PostAsJsonAsync("/carbon-factors/import", request);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
+        Assert.Equal("no valid factor rows remain after validation", payload.GetProperty("details").GetProperty("reason").GetString());
     }
 
     public async Task HealthEndpointReturnsDeterministicPayload()
@@ -464,6 +502,29 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
                     ["factor_unit"] = "kg"
                 }
             }
+        };
+    }
+
+    private static Dictionary<string, object> CreateFactor(
+        string externalFactorId,
+        string sourceFamily,
+        string sourceProvider,
+        string category,
+        string activity,
+        decimal factorValue,
+        string factorUnit,
+        int? year)
+    {
+        return new Dictionary<string, object>
+        {
+            ["external_factor_id"] = externalFactorId,
+            ["source_family"] = sourceFamily,
+            ["source_provider"] = sourceProvider,
+            ["category"] = category,
+            ["activity"] = activity,
+            ["factor_value"] = factorValue,
+            ["factor_unit"] = factorUnit,
+            ["year"] = year!
         };
     }
     private static void AssertObjectPropertyNames(JsonElement payload, params string[] expectedPropertyNames)
