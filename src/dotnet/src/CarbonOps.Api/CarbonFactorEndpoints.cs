@@ -1,6 +1,7 @@
 using System.Globalization;
 using CarbonOps.Application.Factors;
 using CarbonOps.Contracts;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 
 namespace CarbonOps.Api;
@@ -43,8 +44,8 @@ internal static class CarbonFactorEndpoints
                 CarbonFactorEndpointExamples.GetFactorByIdSuccess,
                 CarbonFactorEndpointExamples.GetFactorByIdNotFound);
 
-        group.MapPost("/import", (ParserCarbonFactorBatchImportRequest request, CarbonFactorImportBoundaryService boundaryService) =>
-            ImportCarbonFactors(request, boundaryService));
+        group.MapPost("/import", (HttpRequest httpRequest, ParserCarbonFactorBatchImportRequest request, CarbonFactorImportBoundaryService boundaryService, IOptions<ApiKeyAuthenticationOptions> apiKeyOptions) =>
+            ImportCarbonFactors(httpRequest, request, boundaryService, apiKeyOptions.Value));
 
         return endpoints;
     }
@@ -80,11 +81,36 @@ internal static class CarbonFactorEndpoints
     }
 
     private static IResult ImportCarbonFactors(
+        HttpRequest httpRequest,
         ParserCarbonFactorBatchImportRequest request,
-        CarbonFactorImportBoundaryService boundaryService)
+        CarbonFactorImportBoundaryService boundaryService,
+        ApiKeyAuthenticationOptions apiKeyOptions)
     {
+        EnsureAuthorized(httpRequest, apiKeyOptions).ThrowIfError();
+
         var result = boundaryService.ValidateAndAccept(request).GetValueOrThrow();
         return TypedResults.Accepted($"/carbon-factors/import/{result.BatchId}", result);
+    }
+
+    private static ApiError? EnsureAuthorized(HttpRequest request, ApiKeyAuthenticationOptions options)
+    {
+        if (string.IsNullOrWhiteSpace(options.ImportEndpointKey))
+        {
+            return ApiError.Unauthorized("import endpoint API key is not configured");
+        }
+
+        if (!request.Headers.TryGetValue(ApiKeyAuthenticationOptions.HeaderName, out var providedApiKey)
+            || string.IsNullOrWhiteSpace(providedApiKey))
+        {
+            return ApiError.Unauthorized("missing API key");
+        }
+
+        if (!string.Equals(providedApiKey.ToString(), options.ImportEndpointKey, StringComparison.Ordinal))
+        {
+            return ApiError.Unauthorized("invalid API key");
+        }
+
+        return null;
     }
 
     private static ApplicationResult<FactorSearchRequest> TryBuildFactorQuery(IQueryCollection queryCollection)

@@ -1,21 +1,35 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace CarbonOps.Api.Tests;
 
 public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
 {
+    private const string TestApiKey = "test-import-api-key";
     private readonly HttpClient client;
     private readonly WebApplicationFactory<Program> factory;
 
     public CarbonFactorEndpointsTests(WebApplicationFactory<Program> factory)
     {
-        this.factory = factory;
-        client = factory.CreateClient();
+        this.factory = factory.WithWebHostBuilder(builder =>
+        {
+            builder.UseEnvironment("Testing");
+            builder.ConfigureAppConfiguration((_, configuration) =>
+            {
+                configuration.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["Security:ApiKey:ImportEndpointKey"] = TestApiKey
+                });
+            });
+        });
+
+        client = this.factory.CreateClient();
     }
 
     [Fact]
@@ -265,10 +279,38 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
         Assert.Equal("application/json; charset=utf-8", response.Content.Headers.ContentType?.ToString());
     }
 
+
+    [Fact]
+    public async Task ImportCarbonFactorsReturnsUnauthorizedWhenApiKeyIsMissing()
+    {
+        var response = await client.PostAsJsonAsync("/carbon-factors/import", CreateValidImportRequest());
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        var responseBody = await response.Content.ReadAsStringAsync();
+        var payload = JsonDocument.Parse(responseBody).RootElement;
+        AssertErrorShape(payload, "unauthorized", "Unauthorized");
+        Assert.Equal("missing API key", payload.GetProperty("details").GetProperty("reason").GetString());
+        Assert.DoesNotContain(TestApiKey, responseBody, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ImportCarbonFactorsReturnsUnauthorizedWhenApiKeyIsInvalid()
+    {
+        var response = await PostImportRequestAsync(CreateValidImportRequest(), "invalid-key");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        var responseBody = await response.Content.ReadAsStringAsync();
+        var payload = JsonDocument.Parse(responseBody).RootElement;
+        AssertErrorShape(payload, "unauthorized", "Unauthorized");
+        Assert.Equal("invalid API key", payload.GetProperty("details").GetProperty("reason").GetString());
+        Assert.DoesNotContain(TestApiKey, responseBody, StringComparison.Ordinal);
+        Assert.DoesNotContain("invalid-key", responseBody, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task ImportCarbonFactorsReturnsAcceptedBoundaryResponseForValidRequest()
     {
-        var response = await client.PostAsJsonAsync("/carbon-factors/import", CreateValidImportRequest());
+        var response = await PostImportRequestAsync(CreateValidImportRequest());
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
@@ -291,8 +333,8 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
     {
         var request = CreateValidImportRequest();
 
-        var first = await client.PostAsJsonAsync("/carbon-factors/import", request);
-        var second = await client.PostAsJsonAsync("/carbon-factors/import", request);
+        var first = await PostImportRequestAsync(request);
+        var second = await PostImportRequestAsync(request);
 
         Assert.Equal(HttpStatusCode.Accepted, first.StatusCode);
         Assert.Equal(HttpStatusCode.Accepted, second.StatusCode);
@@ -315,7 +357,7 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
             CreateFactor("id-2", "electricity", "synthetic", "electricity", "grid", 1.2m, " ", 2024)
         };
 
-        var response = await client.PostAsJsonAsync("/carbon-factors/import", request);
+        var response = await PostImportRequestAsync(request);
 
         Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
         var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
@@ -339,7 +381,7 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
         var request = CreateValidImportRequest();
         request["factors"] = Array.Empty<object>();
 
-        var response = await client.PostAsJsonAsync("/carbon-factors/import", request);
+        var response = await PostImportRequestAsync(request);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
@@ -352,7 +394,7 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
         var request = CreateValidImportRequest();
         request["batch_id"] = " ";
 
-        var response = await client.PostAsJsonAsync("/carbon-factors/import", request);
+        var response = await PostImportRequestAsync(request);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
@@ -368,7 +410,7 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
             CreateFactor("id-1", "electricity", "synthetic", "electricity", "grid", 1.1m, " ", 2024)
         };
 
-        var response = await client.PostAsJsonAsync("/carbon-factors/import", request);
+        var response = await PostImportRequestAsync(request);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync()).RootElement;
@@ -509,6 +551,21 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
         }
     }
 
+
+    private Task<HttpResponseMessage> PostImportRequestAsync(object request, string? apiKey = TestApiKey)
+    {
+        var requestMessage = new HttpRequestMessage(HttpMethod.Post, "/carbon-factors/import")
+        {
+            Content = JsonContent.Create(request)
+        };
+
+        if (apiKey is not null)
+        {
+            requestMessage.Headers.Add("X-Api-Key", apiKey);
+        }
+
+        return client.SendAsync(requestMessage);
+    }
 
     private static Dictionary<string, object> CreateValidImportRequest()
     {
