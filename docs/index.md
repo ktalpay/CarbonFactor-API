@@ -15,6 +15,7 @@
 ## Current API Contract
 
 - [API Contract](api-contract.md)
+- [Contract Parity](contract-parity.md)
 - [HTTP Adapter](http-adapter.md)
 - [Transport Boundary](transport-boundary.md)
 

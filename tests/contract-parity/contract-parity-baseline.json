@@ -1,0 +1,278 @@
+{
+  "schema_version": 1,
+  "task": "PT-001",
+  "status": "baseline",
+  "description": "Minimal cross-runtime contract parity baseline for CarbonOps-API. This file records the public contract surface that Python and .NET parity work must align around without adding generated clients, generated OpenAPI output, or byte-for-byte response fixture comparison in PT-001.",
+  "dotnet_source_of_truth": {
+    "contracts_project": "src/dotnet/src/CarbonOps.Contracts",
+    "api_project": "src/dotnet/src/CarbonOps.Api",
+    "contract_tests": "src/dotnet/tests/CarbonOps.Contracts.Tests",
+    "api_shape_tests": "src/dotnet/tests/CarbonOps.Api.Tests"
+  },
+  "python_side": {
+    "package_root": "src/python",
+    "contract_modules": [
+      "src/python/src/carbonops_api/contracts/models.py",
+      "src/python/src/carbonops_api/contracts/errors.py",
+      "src/python/src/carbonops_api/transport/envelope.py"
+    ],
+    "current_routes": [
+      "GET /health",
+      "GET /factors",
+      "GET /factors/{factor_id}"
+    ],
+    "status": "Python has a legacy read-only contract foundation for /factors and transport envelopes. It does not yet implement the modern /carbon-factors import, auth, rate limiting, audit, or /v1 route surface."
+  },
+  "route_families": [
+    {
+      "name": "carbon_factor_read_legacy",
+      "runtime": ".NET",
+      "authentication": "public",
+      "rate_limit_policy": "read",
+      "routes": [
+        "GET /carbon-factors",
+        "GET /carbon-factors/search",
+        "GET /carbon-factors/{factorId}"
+      ]
+    },
+    {
+      "name": "carbon_factor_read_v1",
+      "runtime": ".NET",
+      "authentication": "public",
+      "rate_limit_policy": "read",
+      "routes": [
+        "GET /v1/carbon-factors",
+        "GET /v1/carbon-factors/search",
+        "GET /v1/carbon-factors/{factorId}"
+      ]
+    },
+    {
+      "name": "carbon_factor_import_legacy",
+      "runtime": ".NET",
+      "authentication": "api_key",
+      "required_header": "X-Api-Key",
+      "rate_limit_policy": "import",
+      "routes": [
+        "POST /carbon-factors/import"
+      ]
+    },
+    {
+      "name": "carbon_factor_import_v1",
+      "runtime": ".NET",
+      "authentication": "api_key",
+      "required_header": "X-Api-Key",
+      "rate_limit_policy": "import",
+      "routes": [
+        "POST /v1/carbon-factors/import"
+      ]
+    },
+    {
+      "name": "operational",
+      "runtime": ".NET",
+      "authentication": "public",
+      "rate_limit_policy": "none",
+      "routes": [
+        "GET /health",
+        "GET /health/live",
+        "GET /health/ready",
+        "GET /version"
+      ],
+      "versioning": "unversioned"
+    },
+    {
+      "name": "python_legacy_read",
+      "runtime": "Python",
+      "authentication": "public",
+      "routes": [
+        "GET /health",
+        "GET /factors",
+        "GET /factors/{factor_id}"
+      ],
+      "versioning": "legacy-python-local-adapter"
+    }
+  ],
+  "field_groups": {
+    "factor_item": [
+      "id",
+      "source",
+      "category",
+      "activity",
+      "factor_value",
+      "factor_unit",
+      "region",
+      "year",
+      "notes"
+    ],
+    "factor_list_response": [
+      "factors",
+      "total"
+    ],
+    "factor_search_response": [
+      "factors",
+      "total"
+    ],
+    "factor_detail_response": [
+      "factor"
+    ],
+    "import_accepted_response": [
+      "batch_id",
+      "audit",
+      "accepted_records",
+      "rejected_records",
+      "status",
+      "validation_status",
+      "total_records",
+      "warning_count",
+      "error_count",
+      "has_warnings",
+      "has_errors",
+      "persisted",
+      "import_execution",
+      "warnings",
+      "errors"
+    ],
+    "import_audit_metadata": [
+      "audit_id",
+      "batch_id",
+      "contract_version",
+      "source_system",
+      "source_family",
+      "source_provider",
+      "publication",
+      "publication_version",
+      "parser_name",
+      "parser_version",
+      "parser_run_id",
+      "generated_at_utc",
+      "evaluated_at_utc",
+      "tenant_id",
+      "authentication_scheme"
+    ],
+    "import_validation_message": [
+      "row_index",
+      "external_factor_id",
+      "field",
+      "code",
+      "message"
+    ],
+    "error_envelope": [
+      "code",
+      "message",
+      "details"
+    ],
+    "python_transport_envelope": [
+      "status",
+      "data",
+      "error"
+    ],
+    "health_response": [
+      "status"
+    ],
+    "liveness_response": [
+      "status",
+      "check"
+    ],
+    "readiness_response": [
+      "status",
+      "check"
+    ],
+    "version_response": [
+      "name",
+      "version"
+    ]
+  },
+  "error_envelopes": [
+    {
+      "category": "unauthorized",
+      "http_status": 401,
+      "code": "unauthorized",
+      "fields": [
+        "code",
+        "message",
+        "details"
+      ],
+      "safe_details": [
+        "reason"
+      ]
+    },
+    {
+      "category": "invalid_query",
+      "http_status": 400,
+      "code": "invalid_query",
+      "fields": [
+        "code",
+        "message",
+        "details"
+      ],
+      "safe_details": [
+        "reason",
+        "unsupported_query_keys"
+      ]
+    },
+    {
+      "category": "not_found",
+      "http_status": 404,
+      "code": "not_found",
+      "fields": [
+        "code",
+        "message",
+        "details"
+      ],
+      "safe_details": [
+        "id"
+      ]
+    },
+    {
+      "category": "rate_limited",
+      "http_status": 429,
+      "code": "rate_limited",
+      "fields": [
+        "code",
+        "message",
+        "details"
+      ],
+      "safe_details": [
+        "reason"
+      ]
+    }
+  ],
+  "headers": {
+    "response": [
+      "X-Correlation-Id"
+    ],
+    "rate_limited_response": [
+      "X-Correlation-Id",
+      "Retry-After"
+    ],
+    "request": {
+      "X-Api-Key": "required only for import routes"
+    }
+  },
+  "invariants": {
+    "import_persisted": false,
+    "import_execution": "not_started",
+    "authentication_scheme": "api_key",
+    "required_import_scope": "carbon_factors:import",
+    "secrets_not_public_response_fields": [
+      "api_key",
+      "key_hash",
+      "previous_key_hashes",
+      "revoked_key_hashes",
+      "configured_scopes"
+    ]
+  },
+  "non_goals": [
+    "no generated client in PT-001",
+    "no generated OpenAPI output in PT-001",
+    "no OpenAPI contract drift check in PT-001",
+    "no response fixture byte-for-byte comparison in PT-001",
+    "no broad Python SDK redesign in PT-001",
+    "no public API response shape changes in PT-001",
+    "no .NET runtime behavior changes in PT-001"
+  ],
+  "follow_ups": [
+    "PT-002 response fixture comparison",
+    "PT-003 OpenAPI contract drift check",
+    "PT-004 production parity review"
+  ]
+}
