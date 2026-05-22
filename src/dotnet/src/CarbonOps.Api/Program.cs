@@ -11,6 +11,7 @@ var app = builder.Build();
 
 LogStartupConfiguration(app);
 
+app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<ApiErrorMappingMiddleware>();
 
 app.MapOperationalEndpoints();
