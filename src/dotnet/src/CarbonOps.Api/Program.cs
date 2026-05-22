@@ -13,6 +13,7 @@ builder.Services.AddCarbonFactorServices(builder.Configuration);
 var app = builder.Build();
 
 ValidateProductionConfiguration(app);
+await RunPostgreSqlBootstrapAsync(app);
 LogStartupConfiguration(app);
 
 app.UseMiddleware<CorrelationIdMiddleware>();
@@ -41,6 +42,57 @@ static void LogStartupConfiguration(WebApplication app)
         apiKeyOptions.RevokedKeyHashes?.Length ?? 0,
         !string.IsNullOrWhiteSpace(apiKeyOptions.ImportTenantId),
         apiKeyOptions.ImportEndpointScopes?.Length ?? 0);
+}
+
+static async Task RunPostgreSqlBootstrapAsync(WebApplication app)
+{
+    var configuration = app.Services.GetRequiredService<IConfiguration>();
+    if (!configuration.GetValue<bool>("Persistence:UsePostgreSql"))
+    {
+        return;
+    }
+
+    var options = configuration
+        .GetSection(PostgreSqlPersistenceOptions.SectionName)
+        .Get<PostgreSqlPersistenceOptions>() ?? new PostgreSqlPersistenceOptions();
+    var mode = PostgreSqlSchemaBootstrapModeParser.Parse(options.BootstrapMode);
+    var logger = app.Services
+        .GetRequiredService<ILoggerFactory>()
+        .CreateLogger("CarbonOps.Api.PostgreSqlBootstrap");
+
+    if (!options.BootstrapOnStartup)
+    {
+        logger.LogInformation(
+            "CarbonOps PostgreSQL schema bootstrap skipped {bootstrap_enabled} {bootstrap_mode}",
+            false,
+            mode.ToString());
+        return;
+    }
+
+    try
+    {
+        using var scope = app.Services.CreateScope();
+        var bootstrapper = scope.ServiceProvider.GetRequiredService<IPostgreSqlSchemaBootstrapper>();
+        var result = await bootstrapper.BootstrapAsync(mode, app.Lifetime.ApplicationStopping);
+
+        logger.LogInformation(
+            "CarbonOps PostgreSQL schema bootstrap completed {bootstrap_enabled} {bootstrap_mode} {schema_scripts_planned} {schema_scripts_executed} {schema_validation_status}",
+            true,
+            result.Mode.ToString(),
+            result.ScriptsPlanned,
+            result.ScriptsExecuted,
+            result.ValidationStatus);
+    }
+    catch (Exception exception)
+    {
+        logger.LogError(
+            exception,
+            "CarbonOps PostgreSQL schema bootstrap failed {bootstrap_enabled} {bootstrap_mode} {schema_validation_status}",
+            true,
+            mode.ToString(),
+            "failure");
+        throw;
+    }
 }
 
 static void ValidateProductionConfiguration(WebApplication app)

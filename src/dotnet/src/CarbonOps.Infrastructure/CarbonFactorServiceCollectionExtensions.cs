@@ -27,9 +27,14 @@ public static class CarbonFactorServiceCollectionExtensions
                     $"'{PostgreSqlPersistenceOptions.SectionName}:ConnectionString' is required when PostgreSQL persistence is enabled.");
             }
 
+            PostgreSqlSchemaBootstrapModeParser.Parse(options.BootstrapMode);
+
             services.AddDbContext<CarbonOpsDbContext>(dbOptions => dbOptions.UseNpgsql(options.ConnectionString));
             services.AddScoped<ICarbonFactorRepository, EfCoreCarbonFactorRepository>();
             services.AddScoped<ICarbonOpsTransactionBoundary, EfCoreCarbonOpsTransactionBoundary>();
+            services.AddScoped<IPostgreSqlSchemaInspector, PostgreSqlSchemaInspector>();
+            services.AddScoped<IPostgreSqlSchemaExecutor, PostgreSqlSchemaExecutor>();
+            services.AddScoped<IPostgreSqlSchemaBootstrapper, PostgreSqlSchemaBootstrapper>();
         }
         else
         {

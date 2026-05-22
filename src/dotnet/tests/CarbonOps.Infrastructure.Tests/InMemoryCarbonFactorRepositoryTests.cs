@@ -82,7 +82,9 @@ public sealed class InMemoryCarbonFactorRepositoryTests
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["Persistence:UsePostgreSql"] = "true",
-                ["Persistence:PostgreSql:ConnectionString"] = "Host=localhost;Database=carbonops;Username=test;Password=test"
+                ["Persistence:PostgreSql:ConnectionString"] = "Host=localhost;Database=carbonops;Username=test;Password=test",
+                ["Persistence:PostgreSql:BootstrapOnStartup"] = "false",
+                ["Persistence:PostgreSql:BootstrapMode"] = "ValidateOnly"
             })
             .Build();
 
@@ -97,5 +99,46 @@ public sealed class InMemoryCarbonFactorRepositoryTests
 
         Assert.NotNull(dbContextOptions);
         Assert.IsType<EfCoreCarbonFactorRepository>(repository);
+        Assert.NotNull(scope.ServiceProvider.GetRequiredService<IPostgreSqlSchemaBootstrapper>());
+    }
+
+    [Fact]
+    public void AddCarbonFactorServicesRejectsPostgreSqlWithoutConnectionString()
+    {
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Persistence:UsePostgreSql"] = "true",
+                ["Persistence:PostgreSql:ConnectionString"] = ""
+            })
+            .Build();
+
+        var services = new ServiceCollection();
+
+        var exception = Assert.Throws<InvalidOperationException>(() => services.AddCarbonFactorServices(config));
+
+        Assert.Contains("'Persistence:PostgreSql:ConnectionString' is required", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AddCarbonFactorServicesRejectsInvalidPostgreSqlBootstrapMode()
+    {
+        const string connectionString = "Host=localhost;Database=carbonops;Username=test;Password=should-not-leak";
+        var config = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Persistence:UsePostgreSql"] = "true",
+                ["Persistence:PostgreSql:ConnectionString"] = connectionString,
+                ["Persistence:PostgreSql:BootstrapMode"] = "DestroyEverything"
+            })
+            .Build();
+
+        var services = new ServiceCollection();
+
+        var exception = Assert.Throws<InvalidOperationException>(() => services.AddCarbonFactorServices(config));
+
+        Assert.Contains("'Persistence:PostgreSql:BootstrapMode' must be one of: ValidateOnly, CreateMissing", exception.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain(connectionString, exception.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("should-not-leak", exception.Message, StringComparison.Ordinal);
     }
 }

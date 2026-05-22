@@ -3,6 +3,8 @@
 Date: 2026-05-21  
 Scope: `src/dotnet` persistence-related implementation and tests only.
 
+Update: PRD-002 adds optional .NET PostgreSQL startup schema validation/bootstrap through `Persistence:PostgreSql:BootstrapOnStartup` and `Persistence:PostgreSql:BootstrapMode`. This DB-008 review remains useful historical context, but statements about no runtime startup schema behavior should be read as pre-PRD-002 baseline notes.
+
 ## Verdict
 
 Current persistence is **not fully production-ready**. It is **ready for controlled integration work** with explicit operational procedures and additional SEC/ING hardening.

@@ -144,12 +144,14 @@ PostgreSQL support includes:
 - PostgreSQL schema baseline SQL under `src/dotnet/src/CarbonOps.Infrastructure/Database/postgresql/`,
 - schema manifest and bootstrap planning helpers,
 - SQL safety validation helpers,
+- startup schema validation/bootstrap when `Persistence:PostgreSql:BootstrapOnStartup=true`,
 - opt-in PostgreSQL integration tests through `CARBONOPS_POSTGRESQL_TEST_DSN`.
 
 Runtime composition chooses the mode in `CarbonFactorServiceCollectionExtensions`:
 
 - if `Persistence:UsePostgreSql` is false or missing, the API uses in-memory services,
-- if enabled, `Persistence:PostgreSql:ConnectionString` is required and startup fails fast when missing.
+- if enabled, `Persistence:PostgreSql:ConnectionString` is required and startup fails fast when missing,
+- if `Persistence:PostgreSql:BootstrapOnStartup=true`, startup runs non-destructive schema validation/bootstrap before serving requests.
 
 Production boundaries:
 
@@ -157,7 +159,8 @@ Production boundaries:
 - OPS-032 documents `Persistence__UsePostgreSql=false` as an acceptable runtime setting for the current baseline.
 - DB-008 concludes persistence is ready for controlled integration work, not full production readiness.
 - The current import boundary still returns `persisted=false` and `import_execution="not_started"`.
-- Runtime startup intentionally does not auto-apply schemas with `Database.Migrate()` or `EnsureCreated()`.
+- Runtime startup does not use EF Core `Database.Migrate()` or `EnsureCreated()`.
+- PostgreSQL bootstrap uses the checked-in SQL manifest and safety validator, with `ValidateOnly` and `CreateMissing` modes.
 
 See `docs/persistence-production-readiness.md`, `docs/environment-config-hardening.md`, and `docs/deployment-packaging.md`.
 
