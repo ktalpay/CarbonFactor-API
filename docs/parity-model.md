@@ -3,6 +3,11 @@
 The .NET and Python implementation paths should behave consistently at the
 public API and domain contract level while remaining independent codebases.
 
+See `docs/contract-parity.md` and
+`tests/contract-parity/contract-parity-baseline.json` for the PT-001 baseline
+manifest that records current route families, response field groups, error
+envelopes, header behavior, and explicit PT-001 non-goals.
+
 ## Parity Goals
 
 - Same documented routes or route equivalents.
@@ -36,6 +41,13 @@ Future parity evidence should include:
 - documentation updates when behavior changes
 
 ## Current Status
+
+PT-001 adds a tested baseline manifest. The current Python side remains a
+legacy read-only contract foundation for `/factors` and transport envelopes.
+The current .NET side is the source of truth for the modern `/carbon-factors`,
+`/v1`, protected import, security, observability, and operational endpoint
+surface. PT-001 does not add response fixture comparison, OpenAPI drift checks,
+generated clients, or Python SDK redesign.
 
 The repository now includes `src/python` as the current Python implementation
 root and `src/dotnet` as the initial .NET Clean Architecture solution skeleton.
