@@ -366,6 +366,7 @@ Planned or likely follow-ups:
 
 Related docs:
 
+- `docs/developer-setup.md`
 - `docs/public-endpoints.md`
 - `docs/api-contract.md`
 - `docs/ingestion-production-readiness.md`

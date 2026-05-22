@@ -4,6 +4,7 @@
 
 - [Python Implementation Root](../src/python/README.md)
 - [.NET Implementation Root](../src/dotnet/README.md)
+- [Developer Setup](developer-setup.md)
 - [Architecture](architecture.md)
 - [Clean Architecture](clean-architecture.md)
 - [Clean Code Guidelines](clean-code-guidelines.md)
