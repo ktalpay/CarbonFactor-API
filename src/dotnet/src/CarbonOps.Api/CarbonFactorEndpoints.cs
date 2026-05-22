@@ -8,6 +8,8 @@ namespace CarbonOps.Api;
 
 internal static class CarbonFactorEndpoints
 {
+    private const string ImportEndpointRequiredScope = "carbon_factors:import";
+
     private static readonly string[] SupportedSearchFilters =
     [
         "category",
@@ -122,6 +124,21 @@ internal static class CarbonFactorEndpoints
         if (string.IsNullOrWhiteSpace(options.ImportTenantId))
         {
             return ApplicationResult<ImportAuthenticationContext>.Failure(ApiError.Unauthorized("import tenant is not configured"));
+        }
+
+        var configuredScopes = options.ImportEndpointScopes
+            .Where(scope => !string.IsNullOrWhiteSpace(scope))
+            .Select(scope => scope.Trim())
+            .ToArray();
+
+        if (configuredScopes.Length == 0)
+        {
+            return ApplicationResult<ImportAuthenticationContext>.Failure(ApiError.Unauthorized("import endpoint scope is not configured"));
+        }
+
+        if (!configuredScopes.Contains(ImportEndpointRequiredScope, StringComparer.Ordinal))
+        {
+            return ApplicationResult<ImportAuthenticationContext>.Failure(ApiError.Unauthorized("API key is not permitted to import carbon factors"));
         }
 
         return ApplicationResult<ImportAuthenticationContext>.Success(

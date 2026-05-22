@@ -277,8 +277,8 @@ See also: `docs/ingestion-production-readiness.md` for ING-007 production-readin
 - If `Security:ApiKey:ImportEndpointKey` is missing/blank, import endpoint fails closed with `401 unauthorized`.
 - Missing or invalid key returns deterministic `401` envelope (`code=unauthorized`) without echoing key material.
 - `appsettings.Development.json` may contain an obvious non-production placeholder for local/testing only.
-- Tenant/company scoping is not implemented in SEC-001; planned for SEC-002.
-- This baseline is authentication only and does not provide tenant isolation or role/scope authorization.
+- Tenant/company scoping is covered by SEC-002.
+- Scope authorization is covered by SEC-003.
 
 ## Import tenant/company scoping (SEC-002)
 
@@ -295,3 +295,18 @@ See also: `docs/ingestion-production-readiness.md` for ING-007 production-readin
   - no DB-backed token/tenant management,
   - no import persistence/execution,
   - no read endpoint scoping/filtering yet.
+
+## API key import scope permission (SEC-003)
+
+- `POST /carbon-factors/import` remains protected by the required `X-Api-Key` header.
+- Import authentication remains configuration-driven:
+  - `Security:ApiKey:ImportEndpointKey` supplies the accepted API key.
+  - `Security:ApiKey:ImportTenantId` supplies the deterministic tenant id for the accepted import boundary audit metadata.
+  - `Security:ApiKey:ImportEndpointScopes` supplies the configured API key scopes.
+- The required import scope is `carbon_factors:import`.
+- Missing, blank, or insufficient scopes fail closed with deterministic `401 unauthorized`.
+- Accepted import boundary responses keep the SEC-002 audit behavior:
+  - `tenant_id` is stamped from `Security:ApiKey:ImportTenantId`.
+  - `authentication_scheme` is stamped as `"api_key"`.
+- The public import response shape does not expose configured or authorized scopes.
+- DB-backed token registry, token hashing/storage, revoke, and rotation remain later SEC tasks.
