@@ -178,7 +178,7 @@ The current security model is suitable for a controlled internal pilot when:
 
 ### Not Ready For Broad Production Exposure
 
-The current model is not ready for broad production exposure because it lacks durable token lifecycle, tenant registry, durable audit event persistence, distributed or edge-aware rate limiting, secret-management guidance, and production runbooks.
+The current model is not ready for broad production exposure because it lacks durable token lifecycle, tenant registry, durable audit event persistence, distributed or edge-aware rate limiting, external secret manager integration, and exercised production operating procedures.
 
 ### Required Before Broad Production
 
@@ -187,28 +187,28 @@ Required before broad production:
 - DB-backed token registry.
 - Per-token metadata: owner, tenant/company, scopes, `created_at`, `last_used_at`.
 - Stronger token lifecycle controls around hashing, storage, rotation, revocation, and emergency disablement.
-- Token generation, rotation, and revoke APIs or a documented operator workflow.
+- Token generation, rotation, and revoke APIs or a hardened operator workflow beyond config-only changes.
 - Token expiry policy and enforcement.
 - Durable audit event persistence for auth decisions and import boundary actions.
 - Distributed or edge-aware rate limiting for protected and potentially expensive endpoints.
-- Production logging deployment guidance for the existing structured logging and correlation id baseline.
-- Secret management and deployment guidance for non-development environments.
+- Production logging deployment and alerting guidance for the existing structured logging and correlation id baseline.
+- External secret management for non-development environments.
 - Tenant-scoped read filtering if read endpoints become protected customer endpoints or expose tenant-specific data.
 
 ### Recommended Hardening
 
 Recommended hardening:
 
-- Document exact production configuration requirements for `Security:ApiKey`.
-- Add deployment checks that fail startup or health readiness when required security config is invalid.
+- Keep production configuration requirements for `Security:ApiKey` aligned with `docs/environment-config-hardening.md` and `docs/production-runbook.md`.
+- Exercise deployment checks that fail startup when required security config is invalid.
 - Add auth decision audit events that include non-secret token identifiers once a token registry exists.
-- Add explicit operational runbooks for key compromise, rotation window closure, and revoked hash rollout.
+- Exercise and maintain the operational runbook for key compromise, rotation window closure, and revoked hash rollout.
 - Add monitoring and alerting around auth failures, import rejection spikes, and rate-limit activity.
 - Add a test-maintenance pass for the existing `xUnit1013` warning.
 
-## OPS-026 Through OPS-031 Operational Baseline
+## OPS-026 Through OPS-033 Operational Baseline
 
-See `docs/observability-readiness.md` for the current structured logging, request correlation, audit event, in-process rate limiting, and versioned-route observability baseline. See `docs/environment-config-hardening.md` for production configuration validation and secret-boundary rules. See `docs/deployment-packaging.md` for the container packaging baseline. OPS-026 adds safe named-field logs for startup configuration summary and import lifecycle events, OPS-027 adds `X-Correlation-Id` middleware and `correlation_id` logging scope enrichment, OPS-028 adds a logging-backed audit event model, OPS-029 adds import/read rate limiting boundaries, OPS-030 adds `/v1` carbon factor routes while preserving legacy unversioned routes, OPS-031 adds production startup validation for security-critical config, and OPS-032 adds reproducible Docker packaging. Durable audit persistence, external audit export, distributed rate limiting, API gateway/WAF integration, future version lifecycle tooling, secret manager integration, and production runbooks remain follow-up work.
+See `docs/observability-readiness.md` for the current structured logging, request correlation, audit event, in-process rate limiting, and versioned-route observability baseline. See `docs/environment-config-hardening.md` for production configuration validation and secret-boundary rules. See `docs/deployment-packaging.md` for the container packaging baseline. See `docs/production-runbook.md` for operator procedures. OPS-026 adds safe named-field logs for startup configuration summary and import lifecycle events, OPS-027 adds `X-Correlation-Id` middleware and `correlation_id` logging scope enrichment, OPS-028 adds a logging-backed audit event model, OPS-029 adds import/read rate limiting boundaries, OPS-030 adds `/v1` carbon factor routes while preserving legacy unversioned routes, OPS-031 adds production startup validation for security-critical config, OPS-032 adds reproducible Docker packaging, and OPS-033 adds baseline production operations guidance. Durable audit persistence, external audit export, distributed rate limiting, API gateway/WAF integration, future version lifecycle tooling, and secret manager integration remain follow-up work.
 
 ## Follow-Up Task Mapping
 
@@ -221,7 +221,7 @@ SEC-007 unblocks OPS-026. The current risk mapping is:
 - OPS-030 API versioning strategy: establishes `/v1` carbon factor routes and keeps legacy compatibility; future version lifecycle tooling may still be needed before broad public or customer-facing API commitments.
 - OPS-031 environment config hardening: adds production config validation and secret-boundary guidance; secret manager integration remains future deployment work.
 - OPS-032 deployment packaging baseline: adds reproducible Docker packaging and runtime configuration documentation.
-- OPS-033 production runbook: needed for key compromise, rotation, revoke, incident, and rollback procedures.
+- OPS-033 production runbook: adds key compromise, rotation, revoke, incident, and rollback procedures.
 - Future SEC task: likely needed for DB-backed token registry and full token lifecycle if not represented by an existing issue.
 
 ## Non-Goals Preserved

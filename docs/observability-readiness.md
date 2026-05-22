@@ -4,6 +4,8 @@ Date: 2026-05-22
 
 This document describes the structured logging, request correlation, audit event, rate limiting, and versioned-route observability baseline added for CarbonOps-API. It is intentionally narrow: OPS-026 establishes safe structured log events, OPS-027 adds request correlation IDs, OPS-028 adds an audit event model with a logging-backed sink, OPS-029 adds in-process rate limiting, and OPS-030 adds `/v1` carbon factor route aliases. Durable audit persistence, distributed throttling, API gateway/WAF integration, billing quotas, and future API version lifecycles remain separate follow-up work.
 
+Operator procedures for using these logs, audit events, correlation ids, and rate-limit signals during production incidents are covered in `docs/production-runbook.md`.
+
 ## Logging Baseline
 
 CarbonOps-API uses the built-in ASP.NET Core / `Microsoft.Extensions.Logging` stack and the existing `Logging` configuration in `appsettings.json` and `appsettings.Development.json`.

@@ -2,7 +2,7 @@
 
 Date: 2026-05-22
 
-OPS-032 adds a minimal, reproducible packaging baseline for CarbonOps-API. The scope is intentionally limited to container packaging, package validation, and runtime configuration documentation. It does not add infrastructure provisioning, deployment automation, secret manager integration, or a production runbook.
+OPS-032 adds a minimal, reproducible packaging baseline for CarbonOps-API. The scope is intentionally limited to container packaging, package validation, and runtime configuration documentation. It does not add infrastructure provisioning, deployment automation, or secret manager integration. OPS-033 production operations guidance is covered in `docs/production-runbook.md`.
 
 ## Packaging Model
 
@@ -152,4 +152,4 @@ OPS-032 does not add:
 - generated publish output committed to the repository,
 - Docker image layers committed to the repository.
 
-OPS-033 covers the production runbook.
+OPS-033 production operations guidance is covered in `docs/production-runbook.md`.
