@@ -158,15 +158,16 @@ internal static class CarbonFactorEndpoints
             return ApplicationResult<ImportAuthenticationContext>.Failure(ApiError.Unauthorized("import tenant is not configured"));
         }
 
-        var configuredScopes = options.ImportEndpointScopes
-            .Where(scope => !string.IsNullOrWhiteSpace(scope))
-            .Select(scope => scope.Trim())
-            .ToArray();
-
-        if (configuredScopes.Length == 0)
+        var configuredScopeValues = options.ImportEndpointScopes ?? [];
+        if (configuredScopeValues.Length == 0
+            || configuredScopeValues.Any(scope => string.IsNullOrWhiteSpace(scope)))
         {
             return ApplicationResult<ImportAuthenticationContext>.Failure(ApiError.Unauthorized("import endpoint scope is not configured"));
         }
+
+        var configuredScopes = configuredScopeValues
+            .Select(scope => scope.Trim())
+            .ToArray();
 
         if (!configuredScopes.Contains(ImportEndpointRequiredScope, StringComparer.Ordinal))
         {
