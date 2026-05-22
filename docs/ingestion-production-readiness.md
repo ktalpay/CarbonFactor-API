@@ -143,6 +143,8 @@ Critical scope note:
 
 This review indicates ingestion boundary behavior is consistent and deterministic for current scope and is suitable for controlled integration/security hardening. It is not a claim of end-to-end production readiness.
 
+For the security-specific production readiness handoff, see `docs/security-production-readiness.md`.
+
 ## SEC-002 update (tenant scoping boundary model)
 
 - Import endpoint security now includes deterministic tenant identity resolution from config.

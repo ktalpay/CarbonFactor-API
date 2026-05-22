@@ -337,3 +337,7 @@ See also: `docs/ingestion-production-readiness.md` for ING-007 production-readin
 - Provided API keys and configured hashes are never echoed in error responses.
 - This remains a narrow config-driven authentication model, not a DB-backed token registry.
 - No token creation APIs, database token tables, migrations, expiry scheduler, admin UI, external identity provider integration, or audit persistence are introduced by SEC-005.
+
+## Security production readiness (SEC-007)
+
+See `docs/security-production-readiness.md` for the repository-grounded production readiness review of the current config-driven API security model.
