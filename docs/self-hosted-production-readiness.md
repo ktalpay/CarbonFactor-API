@@ -44,20 +44,20 @@ REL-002 is not final self-hosted production readiness. The earlier broad product
 
 | Criterion | Current Status | Notes |
 | --- | --- | --- |
-| Fresh clone works | Partial | Local validation is documented, but fresh-clone database-backed startup is not complete for both runtimes. |
+| Fresh clone works | Partial | PRD-003 adds a reproducible .NET DB-backed startup validation script. Python DB-backed startup remains missing. |
 | Runtime selection documented | Gap | The repo documents .NET as the modern API and Python as a legacy/local foundation, but not as selectable production runtimes. |
-| .NET service start documented | Partial | Local and Docker starts are documented; PRD-002 adds startup DB bootstrap, while fresh-clone DB-backed start validation remains PRD-003. |
+| .NET service start documented | Partial | Local, Docker, and PostgreSQL-backed startup validation paths are documented. |
 | Python service start documented | Partial | Python editable install and local tests are documented; production runtime start is not documented. |
 | DB connection string config documented | Partial | .NET PostgreSQL connection string is documented. Python has no DB connection configuration. |
 | DB bootstrap behavior implemented | Partial | PRD-002 adds .NET PostgreSQL startup validation/create-missing bootstrap. Python has no DB bootstrap. |
-| DB bootstrap behavior tested | Partial | PRD-002 adds .NET unit/startup orchestration tests. Fresh-clone PostgreSQL startup proof and Python DB bootstrap tests remain missing. |
-| Production config validation works | Partial | .NET Production validation exists for security/rate limits; DB bootstrap validation is not complete. Python production config validation is not present. |
+| DB bootstrap behavior tested | Partial | PRD-002 adds .NET unit/startup orchestration tests. PRD-003 adds an opt-in script to exercise a real PostgreSQL DSN; Python DB bootstrap tests remain missing. |
+| Production config validation works | Partial | .NET Production validation exists for security/rate limits and is exercised by the PRD-003 startup script. Python production config validation is not present. |
 | Secrets are external | Partial | Docs require external secrets; no secret manager integration is present. |
 | Docker or equivalent packaging works | Partial | .NET Docker packaging exists. Python packaging/runtime distribution is not equivalent. |
 | Health/readiness endpoints work | Partial | .NET has health/live/ready/version. Python has `/health` only. |
 | Import/read behavior documented | Partial | .NET modern API is documented. Python does not implement modern `/carbon-factors` or import behavior. |
 | Logs/correlation/audit/rate-limit behavior documented | Partial | .NET behavior is documented. Python lacks parity for these behaviors. |
-| No local maintainer-specific settings required | Gap | This is not proven for fresh-clone DB-backed startup across both runtimes. |
+| No local maintainer-specific settings required | Partial | The .NET script uses only operator-provided `CARBONOPS_POSTGRESQL_TEST_DSN`; Python DB-backed startup is still not covered. |
 
 ## .NET Gap Map
 
@@ -78,14 +78,15 @@ Current .NET capabilities already present:
 - `Persistence:PostgreSql:BootstrapOnStartup` for startup validation/bootstrap opt-in.
 - `Persistence:PostgreSql:BootstrapMode` with `ValidateOnly` and `CreateMissing`.
 - Runtime startup bootstrap wiring for PostgreSQL mode when bootstrap is enabled.
+- Fresh-clone DB-backed startup validation script at `scripts/ops/validate-dotnet-postgresql-startup.sh`.
 - SQL safety validation that rejects destructive tokens such as `DROP`, `TRUNCATE`, `DELETE`, and `ALTER TABLE`.
 - Docker packaging baseline.
 - Health, liveness, readiness, and version endpoints.
 - Structured logs, correlation id, audit events, and in-process rate limiting.
 
-Current .NET gaps for self-hosted production readiness after PRD-002:
+Current .NET gaps for self-hosted production readiness after PRD-003:
 
-- No fresh-clone self-hosted startup test proves a user-provided PostgreSQL database becomes usable without manual schema application.
+- Full DB-backed startup validation still depends on an operator-provided PostgreSQL DSN; it is not a default CI requirement.
 - No documented operator decision for when PostgreSQL is mandatory versus in-memory acceptable under the self-hosted target.
 - Import remains `persisted=false` and `import_execution="not_started"`.
 - Durable audit persistence is not implemented.
@@ -93,9 +94,9 @@ Current .NET gaps for self-hosted production readiness after PRD-002:
 
 Recommended .NET next implementation work:
 
-- Add fresh-clone/start validation around the new PostgreSQL bootstrap path.
-- Add opt-in integration evidence for fresh database startup when `CARBONOPS_POSTGRESQL_TEST_DSN` or equivalent is available.
-- Update setup docs with a fresh-clone .NET self-hosted path.
+- Run and record opt-in integration evidence for fresh database startup when `CARBONOPS_POSTGRESQL_TEST_DSN` or equivalent is available.
+- Decide whether self-hosted .NET production mode must require PostgreSQL rather than allowing in-memory mode.
+- Keep import persistence/execution as a separate future task.
 
 ## Python Gap Map
 
@@ -156,7 +157,7 @@ The expected database bootstrap model for self-hosted production readiness:
 - Service starts with Production validation enabled.
 - Startup validates or bootstraps PostgreSQL according to documented safe mode.
 - Health/readiness endpoints confirm the service is ready.
-- Fresh-clone validation commands prove startup succeeds without maintainer-local setup.
+- Fresh-clone validation commands prove startup succeeds without maintainer-local setup when `CARBONOPS_POSTGRESQL_TEST_DSN` points to a suitable PostgreSQL database.
 
 Python target startup path:
 
@@ -183,8 +184,8 @@ Required environment/config docs should cover:
 
 Proposed PRD roadmap:
 
-1. PRD-002: .NET self-hosted DB bootstrap and startup readiness. Implemented in the .NET runtime baseline; fresh-clone proof remains PRD-003.
-2. PRD-003: .NET fresh clone/start validation.
+1. PRD-002: .NET self-hosted DB bootstrap and startup readiness. Implemented in the .NET runtime baseline.
+2. PRD-003: .NET fresh clone/start validation. Adds the opt-in PostgreSQL startup validation script and docs; full execution requires an operator-provided DSN.
 3. PRD-004: Python self-hosted DB/bootstrap design.
 4. PRD-005: Python runtime parity or explicit Python scope decision.
 5. PRD-006: Unified self-hosted setup docs.

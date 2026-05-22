@@ -153,6 +153,8 @@ Runtime composition chooses the mode in `CarbonFactorServiceCollectionExtensions
 - if enabled, `Persistence:PostgreSql:ConnectionString` is required and startup fails fast when missing,
 - if `Persistence:PostgreSql:BootstrapOnStartup=true`, startup runs non-destructive schema validation/bootstrap before serving requests.
 
+PRD-003 adds `scripts/ops/validate-dotnet-postgresql-startup.sh` to exercise the .NET fresh-clone PostgreSQL startup path with `BootstrapMode=CreateMissing`, `/health`, `/health/ready`, and `/v1/carbon-factors` when `CARBONOPS_POSTGRESQL_TEST_DSN` is supplied by the operator.
+
 Production boundaries:
 
 - OPS-031 does not require PostgreSQL in Production.

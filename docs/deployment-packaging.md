@@ -137,6 +137,16 @@ dotnet test src/dotnet/tests/CarbonOps.Api.Tests/CarbonOps.Api.Tests.csproj
 dotnet test src/dotnet/CarbonOps.Api.sln
 ```
 
+Self-hosted PostgreSQL startup validation, when an operator-provided DSN is available:
+
+```bash
+bash -n scripts/ops/validate-dotnet-postgresql-startup.sh
+scripts/ops/validate-dotnet-postgresql-startup.sh --check-only
+scripts/ops/validate-dotnet-postgresql-startup.sh
+```
+
+The script uses `CARBONOPS_POSTGRESQL_TEST_DSN` and does not print the connection string.
+
 ## Limitations
 
 OPS-032 does not add:

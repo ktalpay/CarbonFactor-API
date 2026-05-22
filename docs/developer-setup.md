@@ -187,6 +187,63 @@ curl -i http://localhost:5163/v1/carbon-factors
 
 Development config uses non-production placeholders. Do not use Development config for Production.
 
+## .NET PostgreSQL Startup Validation
+
+PRD-003 adds a fresh-clone .NET DB-backed startup validation path for self-hosted PostgreSQL mode.
+
+The script is:
+
+```bash
+scripts/ops/validate-dotnet-postgresql-startup.sh
+```
+
+It is intended for macOS/Linux `bash`. Windows shells are not covered by this helper.
+
+Required operator-provided environment:
+
+```bash
+export CARBONOPS_POSTGRESQL_TEST_DSN='<postgresql_connection_string>'
+```
+
+Do not paste a real DSN into issues, PRs, screenshots, or shared logs. The script checks for `CARBONOPS_POSTGRESQL_TEST_DSN` but does not print its value.
+
+Check script syntax:
+
+```bash
+bash -n scripts/ops/validate-dotnet-postgresql-startup.sh
+```
+
+Check prerequisites and required environment without starting the API:
+
+```bash
+scripts/ops/validate-dotnet-postgresql-startup.sh --check-only
+```
+
+Run the full validation when a disposable PostgreSQL database is available:
+
+```bash
+scripts/ops/validate-dotnet-postgresql-startup.sh
+```
+
+The script starts the .NET API locally with:
+
+```text
+ASPNETCORE_ENVIRONMENT=Production
+Persistence__UsePostgreSql=true
+Persistence__PostgreSql__BootstrapOnStartup=true
+Persistence__PostgreSql__BootstrapMode=CreateMissing
+```
+
+It also supplies safe non-secret test security and rate-limit configuration required by Production startup validation. By default it listens on `http://127.0.0.1:18080`; set `CARBONOPS_DOTNET_STARTUP_PORT` to use a different local test port.
+
+The validation waits for:
+
+- `GET /health`
+- `GET /health/ready`
+- `GET /v1/carbon-factors`
+
+This proves the .NET API can start against a user-provided PostgreSQL DSN and exercise startup DB bootstrap plus a PostgreSQL-backed read smoke check. It does not prove import persistence or execution: import still returns `persisted=false` and `import_execution="not_started"`. It also does not cover durable audit persistence, DB-backed token lifecycle, secret manager integration, or Python self-hosted DB support.
+
 ## Working On Tasks
 
 Recommended task workflow:
@@ -259,6 +316,15 @@ bash -n scripts/ops/validate-dotnet-package.sh
 scripts/ops/validate-dotnet-package.sh --check-only
 IMAGE_TAG=carbonops-api:local scripts/ops/validate-dotnet-package.sh
 ```
+
+.NET PostgreSQL startup checks when self-hosted DB startup docs or scripts are touched:
+
+```bash
+bash -n scripts/ops/validate-dotnet-postgresql-startup.sh
+scripts/ops/validate-dotnet-postgresql-startup.sh --check-only
+```
+
+The PostgreSQL startup script requires `CARBONOPS_POSTGRESQL_TEST_DSN`. If that variable is unavailable, record that the full DB-backed startup validation was not run.
 
 Before committing, confirm generated artifacts are not staged:
 
