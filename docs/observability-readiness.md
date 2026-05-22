@@ -1,8 +1,8 @@
-# Observability Readiness (OPS-026)
+# Observability Readiness (OPS-026 / OPS-027)
 
 Date: 2026-05-22
 
-This document describes the structured logging baseline added for CarbonOps-API. It is intentionally narrow: OPS-026 establishes safe structured log events, while correlation IDs, durable audit events, and rate limiting remain separate follow-up work.
+This document describes the structured logging and request correlation baseline added for CarbonOps-API. It is intentionally narrow: OPS-026 establishes safe structured log events, OPS-027 adds request correlation IDs, and durable audit events plus rate limiting remain separate follow-up work.
 
 ## Logging Baseline
 
@@ -16,6 +16,32 @@ New application log events use stable message templates with named properties:
 - `CarbonOps import authorization failed`
 - `CarbonOps import validation failed`
 - `CarbonOps import request accepted`
+
+## Correlation ID Baseline
+
+OPS-027 adds request correlation through the `X-Correlation-Id` header.
+
+Current behavior:
+
+- If a request provides a valid `X-Correlation-Id`, the API reuses that value.
+- If a request omits `X-Correlation-Id`, the API generates a new value with `Guid.NewGuid().ToString("N")`.
+- If a request provides a blank, whitespace-only, malformed, too-long, or duplicate `X-Correlation-Id`, the API treats it as invalid ambiguity and generates a new value.
+- Every response includes `X-Correlation-Id`, including success responses, validation failures, and auth failures.
+- Invalid or duplicate incoming raw correlation values are not echoed in the response.
+- The accepted/generated correlation id is stored on `HttpContext.Items` for later internal access.
+
+Current validation rules:
+
+- non-empty,
+- no whitespace,
+- maximum length `128`,
+- only ASCII letters, digits, hyphen, underscore, dot, and colon.
+
+Logging integration:
+
+- Request logs use a structured logging scope with named field `correlation_id`.
+- OPS-026 import lifecycle logs are enriched by the scope without adding `correlation_id` manually to each log call.
+- Raw `X-Correlation-Id` header collections are not logged.
 
 ## Startup Logging
 
@@ -74,18 +100,18 @@ Application logs must not include:
 - raw header collections,
 - raw query strings.
 
-OPS-026 tests assert that import auth failure and accepted import logs do not contain API keys, hashes, configured scope values, plaintext dev key material, or the raw `X-Api-Key` header name.
+OPS-026/OPS-027 tests assert that import auth failure and accepted import logs do not contain API keys, hashes, configured scope values, plaintext dev key material, raw invalid correlation id values, or the raw `X-Api-Key` header name.
 
 ## Current Boundaries
 
-OPS-026 does not add:
+OPS-026/OPS-027 do not add:
 
-- correlation ID middleware; OPS-027 covers this,
 - durable audit event model; OPS-028 covers this,
 - rate limiting; OPS-029 covers this,
 - database logging,
 - third-party logging providers,
 - OpenTelemetry,
+- distributed tracing exporters,
 - read endpoint protection,
 - auth behavior changes,
 - public response shape changes.

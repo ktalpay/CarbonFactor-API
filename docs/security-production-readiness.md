@@ -207,9 +207,9 @@ Recommended hardening:
 - Add monitoring and alerting around auth failures, import rejection spikes, and rate-limit activity.
 - Add a test-maintenance pass for the existing `xUnit1013` warning.
 
-## OPS-026 Structured Logging Baseline
+## OPS-026/OPS-027 Observability Baseline
 
-See `docs/observability-readiness.md` for the current structured logging baseline. OPS-026 adds safe named-field logs for startup configuration summary and import lifecycle events without adding correlation ID middleware, durable audit events, or rate limiting.
+See `docs/observability-readiness.md` for the current structured logging and request correlation baseline. OPS-026 adds safe named-field logs for startup configuration summary and import lifecycle events; OPS-027 adds `X-Correlation-Id` middleware and `correlation_id` logging scope enrichment without adding durable audit events or rate limiting.
 
 ## Follow-Up Task Mapping
 
