@@ -7,6 +7,10 @@ internal sealed class ApiKeyAuthenticationOptions
 
     public string? ImportEndpointKeyHash { get; init; }
 
+    public string[] ImportEndpointPreviousKeyHashes { get; init; } = [];
+
+    public string[] RevokedKeyHashes { get; init; } = [];
+
     public string? ImportTenantId { get; init; }
 
     public string[] ImportEndpointScopes { get; init; } = [];

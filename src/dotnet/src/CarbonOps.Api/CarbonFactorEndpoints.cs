@@ -116,13 +116,39 @@ internal static class CarbonFactorEndpoints
             return ApplicationResult<ImportAuthenticationContext>.Failure(ApiError.Unauthorized("import endpoint API key hash is invalid"));
         }
 
+        var previousKeyHashesResult = TryNormalizeConfiguredKeyHashes(
+            options.ImportEndpointPreviousKeyHashes,
+            "import endpoint previous API key hash is invalid");
+        if (!previousKeyHashesResult.IsSuccess)
+        {
+            return ApplicationResult<ImportAuthenticationContext>.Failure(previousKeyHashesResult.Error!);
+        }
+
+        var revokedKeyHashesResult = TryNormalizeConfiguredKeyHashes(
+            options.RevokedKeyHashes,
+            "revoked API key hash is invalid");
+        if (!revokedKeyHashesResult.IsSuccess)
+        {
+            return ApplicationResult<ImportAuthenticationContext>.Failure(revokedKeyHashesResult.Error!);
+        }
+
         if (!request.Headers.TryGetValue(ApiKeyAuthenticationOptions.HeaderName, out var providedApiKey)
             || string.IsNullOrWhiteSpace(providedApiKey))
         {
             return ApplicationResult<ImportAuthenticationContext>.Failure(ApiError.Unauthorized("missing API key"));
         }
 
-        if (!ApiKeyHashVerifier.VerifySha256Hex(providedApiKey.ToString(), configuredKeyHash))
+        var providedKeyHash = ApiKeyHashVerifier.ComputeSha256Hex(providedApiKey.ToString());
+        var revokedKeyHashes = revokedKeyHashesResult.Value!;
+        if (ApiKeyHashVerifier.MatchesAnySha256HexHash(providedKeyHash, revokedKeyHashes))
+        {
+            return ApplicationResult<ImportAuthenticationContext>.Failure(ApiError.Unauthorized("API key is revoked"));
+        }
+
+        var acceptedKeyHashes = new[] { configuredKeyHash! }
+            .Concat(previousKeyHashesResult.Value!)
+            .ToArray();
+        if (!ApiKeyHashVerifier.MatchesAnySha256HexHash(providedKeyHash, acceptedKeyHashes))
         {
             return ApplicationResult<ImportAuthenticationContext>.Failure(ApiError.Unauthorized("invalid API key"));
         }
@@ -149,6 +175,25 @@ internal static class CarbonFactorEndpoints
 
         return ApplicationResult<ImportAuthenticationContext>.Success(
             new ImportAuthenticationContext(options.ImportTenantId.Trim(), "api_key"));
+    }
+
+    private static ApplicationResult<string[]> TryNormalizeConfiguredKeyHashes(
+        IEnumerable<string?>? configuredHashes,
+        string invalidReason)
+    {
+        var normalizedHashes = new List<string>();
+        foreach (var configuredHash in configuredHashes ?? [])
+        {
+            var normalizedHash = configuredHash?.Trim();
+            if (!ApiKeyHashVerifier.IsValidSha256HexHash(normalizedHash))
+            {
+                return ApplicationResult<string[]>.Failure(ApiError.Unauthorized(invalidReason));
+            }
+
+            normalizedHashes.Add(normalizedHash!);
+        }
+
+        return ApplicationResult<string[]>.Success(normalizedHashes.ToArray());
     }
 
     private static ApplicationResult<FactorSearchRequest> TryBuildFactorQuery(IQueryCollection queryCollection)

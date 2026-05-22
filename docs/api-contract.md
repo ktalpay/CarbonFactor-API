@@ -309,7 +309,8 @@ See also: `docs/ingestion-production-readiness.md` for ING-007 production-readin
   - `tenant_id` is stamped from `Security:ApiKey:ImportTenantId`.
   - `authentication_scheme` is stamped as `"api_key"`.
 - The public import response shape does not expose configured or authorized scopes.
-- DB-backed token registry, per-token metadata, revoke, rotation, expiry, and audit events remain later SEC tasks.
+- DB-backed token registry, per-token metadata, expiry, and audit events remain later SEC tasks.
+- Config-driven revoke and rotation behavior is covered by SEC-005.
 
 ## API key token hashing/storage (SEC-004)
 
@@ -320,4 +321,19 @@ See also: `docs/ingestion-production-readiness.md` for ING-007 production-readin
 - Missing, blank, or invalid hash configuration fails closed with deterministic `401 unauthorized`.
 - Provided API keys, configured plaintext keys, and configured hashes are never echoed in error responses.
 - This is still a narrow config-driven authentication model, not a DB-backed token registry.
-- Token registry, per-token metadata, revoke, rotation, expiry, and audit event persistence remain later SEC tasks.
+- Token registry, per-token metadata, expiry, and audit event persistence remain later SEC tasks.
+- Config-driven revoke and rotation behavior is covered by SEC-005.
+
+## API key token revoke and rotation (SEC-005)
+
+- `POST /carbon-factors/import` still uses the `X-Api-Key` header and the `"api_key"` authentication scheme.
+- The current accepted API key hash is configured as `Security:ApiKey:ImportEndpointKeyHash`.
+- A rotation window can be configured with `Security:ApiKey:ImportEndpointPreviousKeyHashes`, an array of lowercase SHA-256 hex hashes for previous keys that should remain temporarily accepted.
+- A revocation list can be configured with `Security:ApiKey:RevokedKeyHashes`, an array of lowercase SHA-256 hex hashes that must fail closed even if the same hash is current or previous.
+- Revocation is checked before accepting current or previous key hashes.
+- Missing, blank, or invalid current hash configuration fails closed with deterministic `401 unauthorized`.
+- Invalid hashes in `Security:ApiKey:ImportEndpointPreviousKeyHashes` or `Security:ApiKey:RevokedKeyHashes` fail closed; invalid configured hashes are not silently ignored.
+- The public import response does not disclose whether the current key or a previous rotating key matched.
+- Provided API keys and configured hashes are never echoed in error responses.
+- This remains a narrow config-driven authentication model, not a DB-backed token registry.
+- No token creation APIs, database token tables, migrations, expiry scheduler, admin UI, external identity provider integration, or audit persistence are introduced by SEC-005.
