@@ -29,6 +29,10 @@ The PT-004 production parity review is documented in
 `docs/production-parity-review.md`. It uses PT-001, PT-002, PT-003, and
 the OPS-033 production runbook as inputs before REL-001.
 
+The DOC-001 public endpoint guide is documented in
+`docs/public-endpoints.md` and uses the same fixtures and metadata
+baseline as the parity checks.
+
 ## Purpose
 
 The repository has two runtime roots:

@@ -7,6 +7,10 @@
 - Contract style: deterministic in-memory models and service behavior
 - Transport boundary: deterministic local envelope + status mapping layer (no framework)
 
+For the current `.NET` public HTTP endpoint guide, including `/v1` routes,
+legacy compatibility routes, headers, rate limiting behavior, and examples
+from checked-in fixtures, see `docs/public-endpoints.md`.
+
 ## DTO Models
 
 CarbonFactor remains the domain concept for a carbon factor record.
