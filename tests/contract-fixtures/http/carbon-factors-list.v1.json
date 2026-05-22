@@ -1,0 +1,38 @@
+{
+  "factors": [
+    {
+      "id": "f-001",
+      "source": "synthetic",
+      "category": "electricity",
+      "activity": "grid electricity",
+      "factor_value": 0.42,
+      "factor_unit": "kgCO2e/kWh",
+      "region": "US-WEST",
+      "year": 2024,
+      "notes": "grid sample"
+    },
+    {
+      "id": "f-002",
+      "source": "synthetic",
+      "category": "transport",
+      "activity": "passenger vehicle",
+      "factor_value": 0.19,
+      "factor_unit": "kgCO2e/km",
+      "region": "US",
+      "year": 2024,
+      "notes": "vehicle sample"
+    },
+    {
+      "id": "f-003",
+      "source": "synthetic",
+      "category": "electricity",
+      "activity": "onsite solar",
+      "factor_value": 0.05,
+      "factor_unit": "kgCO2e/kWh",
+      "region": "TR",
+      "year": 2023,
+      "notes": "low-carbon sample"
+    }
+  ],
+  "total": 3
+}

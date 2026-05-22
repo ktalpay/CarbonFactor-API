@@ -1,0 +1,7 @@
+{
+  "code": "invalid_query",
+  "message": "Invalid query",
+  "details": {
+    "reason": "year must be positive"
+  }
+}
