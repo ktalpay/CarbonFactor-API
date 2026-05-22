@@ -8,6 +8,8 @@ This runbook covers baseline production operation for CarbonOps-API as it exists
 
 It is operator-focused and repository-grounded. It documents packaging, runtime configuration, health checks, smoke checks, key rotation, emergency revoke, rate limiting, logs, audit events, troubleshooting, rollback, and security handling rules.
 
+For the consolidated readiness checklist and REL-001 handoff, see `docs/production-readiness.md`.
+
 This runbook does not add or cover:
 
 - cloud provisioning,

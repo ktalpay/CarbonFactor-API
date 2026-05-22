@@ -27,6 +27,7 @@
 ## Roadmap And Readiness
 
 - [Production Readiness Backlog](production-readiness-backlog.md)
+- [Production Readiness](production-readiness.md)
 - [Deployment Packaging](deployment-packaging.md)
 - [Production Runbook](production-runbook.md)
 - [Roadmap](roadmap.md)

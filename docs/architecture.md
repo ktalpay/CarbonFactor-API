@@ -8,7 +8,7 @@ This document is the current architecture overview for the CarbonOps-API reposit
 
 This is documentation only. It does not change runtime behavior, public response contracts, fixtures, route metadata, Docker packaging, migrations, or deployment automation.
 
-This document does not claim broad production readiness. See `docs/security-production-readiness.md`, `docs/persistence-production-readiness.md`, `docs/production-runbook.md`, and the future REL-001 review for production readiness decisions.
+This document does not claim broad production readiness. See `docs/production-readiness.md`, `docs/security-production-readiness.md`, `docs/persistence-production-readiness.md`, `docs/production-runbook.md`, and the future REL-001 review for production readiness decisions.
 
 ## Repository Layout
 
@@ -375,6 +375,7 @@ Related docs:
 - `docs/environment-config-hardening.md`
 - `docs/observability-readiness.md`
 - `docs/deployment-packaging.md`
+- `docs/production-readiness.md`
 - `docs/production-runbook.md`
 - `docs/contract-parity.md`
 - `docs/response-fixtures.md`
