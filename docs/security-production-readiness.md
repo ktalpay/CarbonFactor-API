@@ -178,7 +178,7 @@ The current security model is suitable for a controlled internal pilot when:
 
 ### Not Ready For Broad Production Exposure
 
-The current model is not ready for broad production exposure because it lacks durable token lifecycle, tenant registry, durable audit event persistence, rate limiting, secret-management guidance, and production runbooks.
+The current model is not ready for broad production exposure because it lacks durable token lifecycle, tenant registry, durable audit event persistence, distributed or edge-aware rate limiting, secret-management guidance, and production runbooks.
 
 ### Required Before Broad Production
 
@@ -190,7 +190,7 @@ Required before broad production:
 - Token generation, rotation, and revoke APIs or a documented operator workflow.
 - Token expiry policy and enforcement.
 - Durable audit event persistence for auth decisions and import boundary actions.
-- Rate limiting for protected and potentially expensive endpoints.
+- Distributed or edge-aware rate limiting for protected and potentially expensive endpoints.
 - Production logging deployment guidance for the existing structured logging and correlation id baseline.
 - Secret management and deployment guidance for non-development environments.
 - Tenant-scoped read filtering if read endpoints become protected customer endpoints or expose tenant-specific data.
@@ -206,9 +206,9 @@ Recommended hardening:
 - Add monitoring and alerting around auth failures, import rejection spikes, and rate-limit activity.
 - Add a test-maintenance pass for the existing `xUnit1013` warning.
 
-## OPS-026/OPS-027/OPS-028 Observability Baseline
+## OPS-026/OPS-027/OPS-028/OPS-029 Observability Baseline
 
-See `docs/observability-readiness.md` for the current structured logging, request correlation, and audit event baseline. OPS-026 adds safe named-field logs for startup configuration summary and import lifecycle events, OPS-027 adds `X-Correlation-Id` middleware and `correlation_id` logging scope enrichment, and OPS-028 adds a logging-backed audit event model. Durable audit persistence, external audit export, and rate limiting remain follow-up work.
+See `docs/observability-readiness.md` for the current structured logging, request correlation, audit event, and in-process rate limiting baseline. OPS-026 adds safe named-field logs for startup configuration summary and import lifecycle events, OPS-027 adds `X-Correlation-Id` middleware and `correlation_id` logging scope enrichment, OPS-028 adds a logging-backed audit event model, and OPS-029 adds import/read rate limiting boundaries. Durable audit persistence, external audit export, distributed rate limiting, and API gateway/WAF integration remain follow-up work.
 
 ## Follow-Up Task Mapping
 

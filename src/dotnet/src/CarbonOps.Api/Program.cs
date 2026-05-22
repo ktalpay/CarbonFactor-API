@@ -7,12 +7,15 @@ builder.Services
     .AddOptions<ApiKeyAuthenticationOptions>()
     .Bind(builder.Configuration.GetSection(ApiKeyAuthenticationOptions.SectionName));
 builder.Services.AddSingleton<IAuditEventSink, LoggingAuditEventSink>();
+builder.Services.AddCarbonOpsRateLimiting(builder.Configuration);
 builder.Services.AddCarbonFactorServices(builder.Configuration);
 var app = builder.Build();
 
 LogStartupConfiguration(app);
 
 app.UseMiddleware<CorrelationIdMiddleware>();
+app.UseRouting();
+app.UseRateLimiter();
 app.UseMiddleware<ApiErrorMappingMiddleware>();
 
 app.MapOperationalEndpoints();

@@ -934,6 +934,13 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
             configuration["Security:ApiKey:ImportEndpointScopes:0"] = importScope;
         }
 
+        configuration["RateLimiting:Import:PermitLimit"] = "1000";
+        configuration["RateLimiting:Import:WindowSeconds"] = "60";
+        configuration["RateLimiting:Import:QueueLimit"] = "0";
+        configuration["RateLimiting:Read:PermitLimit"] = "1000";
+        configuration["RateLimiting:Read:WindowSeconds"] = "60";
+        configuration["RateLimiting:Read:QueueLimit"] = "0";
+
         return configuration;
     }
 

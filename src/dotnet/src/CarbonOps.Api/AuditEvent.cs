@@ -25,6 +25,7 @@ internal static class AuditEventTypes
     public const string ImportAuthorizationFailed = "import.authorization_failed";
     public const string ImportValidationFailed = "import.validation_failed";
     public const string ImportAccepted = "import.accepted";
+    public const string RateLimitRejected = "rate_limit.rejected";
 }
 
 internal static class AuditEventSeverity
