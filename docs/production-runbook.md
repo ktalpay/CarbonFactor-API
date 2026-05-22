@@ -118,6 +118,8 @@ Security__ApiKey__ImportEndpointPreviousKeyHashes__0=<production_lowercase_sha25
 Security__ApiKey__RevokedKeyHashes__0=<production_lowercase_sha256_hex>
 Persistence__UsePostgreSql=false
 Persistence__PostgreSql__ConnectionString=<external_connection_string_if_enabled>
+Persistence__PostgreSql__BootstrapOnStartup=false
+Persistence__PostgreSql__BootstrapMode=ValidateOnly
 ```
 
 Rules:
@@ -126,6 +128,7 @@ Rules:
 - Do not use the development placeholder hash from `appsettings.Development.json`.
 - Do not use `tenant-dev-001` or other dev/test tenant placeholders in Production.
 - Do not commit plaintext keys, hashes, tenant values, or connection strings.
+- When PostgreSQL is enabled, use `BootstrapMode=ValidateOnly` to require pre-existing schema objects or `BootstrapMode=CreateMissing` to apply the checked-in non-destructive schema SQL for missing required objects.
 
 ## Startup Validation
 

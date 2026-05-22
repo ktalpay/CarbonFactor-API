@@ -1,5 +1,5 @@
 -- CarbonOps PostgreSQL schema baseline for carbon factor storage.
--- Safe to review and apply manually; does not wire runtime persistence.
+-- Safe to review and apply manually or through the non-destructive startup bootstrap.
 
 BEGIN;
 

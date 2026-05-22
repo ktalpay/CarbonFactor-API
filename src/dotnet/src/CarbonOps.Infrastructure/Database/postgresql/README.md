@@ -9,7 +9,8 @@ This folder contains a **reviewable SQL baseline** and deterministic manifest fo
 
 ## Migration/bootstrap strategy
 
-- Runtime API startup **does not** execute schema SQL.
+- Runtime API startup executes schema SQL only when PostgreSQL mode is enabled and `Persistence:PostgreSql:BootstrapOnStartup=true` with `BootstrapMode=CreateMissing`.
+- Runtime API startup can also validate required schema objects without creating them when `BootstrapMode=ValidateOnly`.
 - Schema scripts are discovered through `schema-manifest.txt` in listed order.
 - `PostgreSqlSchemaBootstrapPlanner` can be invoked explicitly by future tooling/CLI/tests to build an ordered application plan.
 - `PostgreSqlSchemaSafetyValidator` rejects scripts containing destructive SQL tokens (`DROP`, `TRUNCATE`, `DELETE`, or `ALTER TABLE`).
@@ -23,7 +24,7 @@ This folder contains a **reviewable SQL baseline** and deterministic manifest fo
 ## Production safety assumptions
 
 - This baseline is designed for explicit, review-first application workflows.
-- No automatic runtime mutation is wired into API startup.
+- Runtime startup bootstrap is opt-in and non-destructive.
 - Production rollout should use controlled deployment steps with peer review and change approval.
 
 ## What DB-004 does not do

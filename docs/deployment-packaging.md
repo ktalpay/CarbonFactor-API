@@ -90,9 +90,13 @@ Security__ApiKey__ImportEndpointPreviousKeyHashes__0=<production_lowercase_sha25
 Security__ApiKey__RevokedKeyHashes__0=<production_lowercase_sha256_hex>
 Persistence__UsePostgreSql=false
 Persistence__PostgreSql__ConnectionString=<external_connection_string_if_enabled>
+Persistence__PostgreSql__BootstrapOnStartup=false
+Persistence__PostgreSql__BootstrapMode=ValidateOnly
 ```
 
 Do not set `Security__ApiKey__ImportEndpointKey` in production. OPS-031 production validation rejects plaintext API key configuration.
+
+When `Persistence__UsePostgreSql=true`, `Persistence__PostgreSql__ConnectionString` is required. PRD-002 adds optional startup schema bootstrap with `Persistence__PostgreSql__BootstrapOnStartup=true`. Use `Persistence__PostgreSql__BootstrapMode=ValidateOnly` to require pre-existing schema objects, or `CreateMissing` to apply the checked-in non-destructive schema SQL when required objects are missing.
 
 ## Production Startup Validation
 

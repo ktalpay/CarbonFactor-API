@@ -59,6 +59,13 @@ Production:
 - `WindowSeconds` must be greater than zero,
 - `QueueLimit` must be zero or greater.
 
+`Persistence:PostgreSql` when `Persistence:UsePostgreSql=true`:
+
+- `ConnectionString` is required,
+- `BootstrapOnStartup` controls whether startup checks the configured PostgreSQL schema,
+- `BootstrapMode` must be `ValidateOnly` or `CreateMissing` when configured,
+- invalid bootstrap mode fails fast without echoing configured connection strings or credentials.
+
 ## Secret Boundary
 
 Production configuration should be supplied by environment-specific configuration, environment variables, or a deployment secret mechanism outside the repository. OPS-031 does not integrate a secret manager.
@@ -93,15 +100,34 @@ RateLimiting__Import__QueueLimit=0
 RateLimiting__Read__PermitLimit=60
 RateLimiting__Read__WindowSeconds=60
 RateLimiting__Read__QueueLimit=0
+Persistence__UsePostgreSql=true
+Persistence__PostgreSql__ConnectionString=<external_postgresql_connection_string>
+Persistence__PostgreSql__BootstrapOnStartup=true
+Persistence__PostgreSql__BootstrapMode=CreateMissing
 ```
 
 Do not set `Security__ApiKey__ImportEndpointKey` in production.
 
 ## Persistence Note
 
-OPS-031 does not require PostgreSQL for production startup. The current import endpoint still returns `persisted=false` and `import_execution="not_started"`, so production persistence hardening remains limited by the current feature scope.
+OPS-031 does not require PostgreSQL for production startup. PRD-002 adds optional PostgreSQL schema bootstrap when PostgreSQL mode is enabled and `Persistence:PostgreSql:BootstrapOnStartup=true`. The current import endpoint still returns `persisted=false` and `import_execution="not_started"`, so production persistence hardening remains limited by the current feature scope.
 
 Future persistence, deployment, and runbook tasks should decide whether production environments must fail startup when PostgreSQL is disabled or missing.
+
+## PostgreSQL Bootstrap Modes
+
+`ValidateOnly`:
+
+- checks that required PostgreSQL schema objects already exist,
+- fails startup with a safe message when required objects are missing,
+- does not create schema objects.
+
+`CreateMissing`:
+
+- checks required PostgreSQL schema objects,
+- runs the checked-in non-destructive schema SQL manifest when required objects are missing,
+- is idempotent because the baseline SQL uses `CREATE ... IF NOT EXISTS`,
+- does not run destructive migrations automatically.
 
 ## Non-Goals
 
