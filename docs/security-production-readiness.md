@@ -208,7 +208,7 @@ Recommended hardening:
 
 ## OPS-026 Through OPS-031 Operational Baseline
 
-See `docs/observability-readiness.md` for the current structured logging, request correlation, audit event, in-process rate limiting, and versioned-route observability baseline. See `docs/environment-config-hardening.md` for production configuration validation and secret-boundary rules. OPS-026 adds safe named-field logs for startup configuration summary and import lifecycle events, OPS-027 adds `X-Correlation-Id` middleware and `correlation_id` logging scope enrichment, OPS-028 adds a logging-backed audit event model, OPS-029 adds import/read rate limiting boundaries, OPS-030 adds `/v1` carbon factor routes while preserving legacy unversioned routes, and OPS-031 adds production startup validation for security-critical config. Durable audit persistence, external audit export, distributed rate limiting, API gateway/WAF integration, future version lifecycle tooling, secret manager integration, and deployment packaging remain follow-up work.
+See `docs/observability-readiness.md` for the current structured logging, request correlation, audit event, in-process rate limiting, and versioned-route observability baseline. See `docs/environment-config-hardening.md` for production configuration validation and secret-boundary rules. See `docs/deployment-packaging.md` for the container packaging baseline. OPS-026 adds safe named-field logs for startup configuration summary and import lifecycle events, OPS-027 adds `X-Correlation-Id` middleware and `correlation_id` logging scope enrichment, OPS-028 adds a logging-backed audit event model, OPS-029 adds import/read rate limiting boundaries, OPS-030 adds `/v1` carbon factor routes while preserving legacy unversioned routes, OPS-031 adds production startup validation for security-critical config, and OPS-032 adds reproducible Docker packaging. Durable audit persistence, external audit export, distributed rate limiting, API gateway/WAF integration, future version lifecycle tooling, secret manager integration, and production runbooks remain follow-up work.
 
 ## Follow-Up Task Mapping
 
@@ -220,7 +220,7 @@ SEC-007 unblocks OPS-026. The current risk mapping is:
 - OPS-029 rate limiting boundary: needed to reduce brute force, replay, and import abuse risk.
 - OPS-030 API versioning strategy: establishes `/v1` carbon factor routes and keeps legacy compatibility; future version lifecycle tooling may still be needed before broad public or customer-facing API commitments.
 - OPS-031 environment config hardening: adds production config validation and secret-boundary guidance; secret manager integration remains future deployment work.
-- OPS-032 deployment packaging baseline: needed for reproducible deployment and environment separation.
+- OPS-032 deployment packaging baseline: adds reproducible Docker packaging and runtime configuration documentation.
 - OPS-033 production runbook: needed for key compromise, rotation, revoke, incident, and rollback procedures.
 - Future SEC task: likely needed for DB-backed token registry and full token lifecycle if not represented by an existing issue.
 

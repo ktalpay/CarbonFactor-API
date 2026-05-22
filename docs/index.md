@@ -21,6 +21,7 @@
 ## Roadmap And Readiness
 
 - [Production Readiness Backlog](production-readiness-backlog.md)
+- [Deployment Packaging](deployment-packaging.md)
 - [Roadmap](roadmap.md)
 - [Limitations](limitations.md)
 - [Public Safety](public-safety.md)

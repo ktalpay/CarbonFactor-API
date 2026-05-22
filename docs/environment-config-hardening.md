@@ -2,7 +2,7 @@
 
 Date: 2026-05-22
 
-OPS-031 adds production-oriented startup validation for CarbonOps-API configuration. The scope is intentionally narrow: it validates security-critical settings and keeps secret values out of startup failures and logs. It does not add a secret manager, deployment packaging, or a production runbook.
+OPS-031 adds production-oriented startup validation for CarbonOps-API configuration. The scope is intentionally narrow: it validates security-critical settings and keeps secret values out of startup failures and logs. It does not add a secret manager, deployment packaging, or a production runbook. OPS-032 deployment packaging is documented in `docs/deployment-packaging.md`.
 
 ## Environment Model
 
@@ -116,4 +116,4 @@ OPS-031 does not add:
 - auth behavior changes for valid configuration,
 - public response body changes.
 
-OPS-032 covers deployment packaging baseline. OPS-033 covers the production runbook.
+OPS-032 deployment packaging baseline is covered in `docs/deployment-packaging.md`. OPS-033 covers the production runbook.
