@@ -8,6 +8,8 @@ REL-001 is the full production readiness review for the current CarbonOps-API ba
 
 This review uses evidence from the SEC, OPS, PT, DOC, and DB work lines. It consolidates the current security, persistence, observability, packaging, contract, parity, endpoint, runbook, and readiness documentation into a release-readiness recommendation.
 
+The REL-002 release candidate checkpoint is captured in `docs/release-candidate-checkpoint.md`.
+
 This document does not approve broad production by itself. It does not implement runtime changes, public contract changes, fixture updates, deployment automation, generated artifacts, migrations, secret manager integration, or release execution. REL-002 remains the release decision and checkpoint follow-up.
 
 ## Evidence Reviewed

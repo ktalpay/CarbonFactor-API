@@ -10,6 +10,8 @@ It is an input to REL-001. It is not a broad production readiness approval, rele
 
 The REL-001 review is captured in `docs/production-readiness-review.md`.
 
+The REL-002 release candidate checkpoint is captured in `docs/release-candidate-checkpoint.md`.
+
 DOC-004 does not change runtime behavior, public API contracts, fixtures, metadata baselines, Docker packaging, scripts, or deployment infrastructure.
 
 ## Current Readiness Summary
