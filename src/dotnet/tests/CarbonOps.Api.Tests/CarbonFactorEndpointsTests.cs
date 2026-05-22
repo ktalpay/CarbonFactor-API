@@ -13,6 +13,8 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
 {
     private const string TestApiKey = "test-import-api-key";
     private const string TestApiKeyHash = "f9ffdcc248b716dfc2dbee5492ecbabab672b7d19522859ad3b0a0fd49a86fd0";
+    private const string PreviousApiKey = "previous-import-api-key";
+    private const string PreviousApiKeyHash = "dcf2d8f1700d7f49fae4215241cbf24c0fb633cc3783e49e24a754891552e91d";
     private const string TestTenantId = "tenant-dev-001";
     private const string ImportScope = "carbon_factors:import";
     private readonly HttpClient client;
@@ -363,6 +365,151 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
         Assert.DoesNotContain(TestApiKey, responseBody, StringComparison.Ordinal);
         Assert.DoesNotContain(TestApiKeyHash, responseBody, StringComparison.Ordinal);
         Assert.DoesNotContain("invalid-key", responseBody, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ImportCarbonFactorsReturnsAcceptedWhenPreviousApiKeyHashMatches()
+    {
+        using var rotationFactory = sourceFactory.WithWebHostBuilder(builder =>
+        {
+            builder.UseEnvironment("Testing");
+            builder.ConfigureAppConfiguration((_, configuration) =>
+            {
+                configuration.AddInMemoryCollection(CreateApiKeyConfiguration(previousKeyHashes: [PreviousApiKeyHash]));
+            });
+        });
+
+        using var rotationClient = rotationFactory.CreateClient();
+        using var request = CreateImportRequestMessage(CreateValidImportRequest(), PreviousApiKey);
+
+        var response = await rotationClient.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        var responseBody = await response.Content.ReadAsStringAsync();
+        var payload = JsonDocument.Parse(responseBody).RootElement;
+        Assert.Equal(TestTenantId, payload.GetProperty("audit").GetProperty("tenant_id").GetString());
+        Assert.Equal("api_key", payload.GetProperty("audit").GetProperty("authentication_scheme").GetString());
+        Assert.DoesNotContain("previous", responseBody, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("rotation", responseBody, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain(PreviousApiKey, responseBody, StringComparison.Ordinal);
+        Assert.DoesNotContain(PreviousApiKeyHash, responseBody, StringComparison.Ordinal);
+        Assert.DoesNotContain(TestApiKeyHash, responseBody, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ImportCarbonFactorsReturnsUnauthorizedWhenCurrentApiKeyHashIsRevoked()
+    {
+        using var revokedFactory = sourceFactory.WithWebHostBuilder(builder =>
+        {
+            builder.UseEnvironment("Testing");
+            builder.ConfigureAppConfiguration((_, configuration) =>
+            {
+                configuration.AddInMemoryCollection(CreateApiKeyConfiguration(
+                    previousKeyHashes: [PreviousApiKeyHash],
+                    revokedKeyHashes: [TestApiKeyHash]));
+            });
+        });
+
+        using var revokedClient = revokedFactory.CreateClient();
+        using var request = CreateImportRequestMessage(CreateValidImportRequest(), TestApiKey);
+
+        var response = await revokedClient.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        var responseBody = await response.Content.ReadAsStringAsync();
+        var payload = JsonDocument.Parse(responseBody).RootElement;
+        AssertErrorShape(payload, "unauthorized", "Unauthorized");
+        Assert.Equal("API key is revoked", payload.GetProperty("details").GetProperty("reason").GetString());
+        Assert.DoesNotContain(TestApiKey, responseBody, StringComparison.Ordinal);
+        Assert.DoesNotContain(TestApiKeyHash, responseBody, StringComparison.Ordinal);
+        Assert.DoesNotContain(PreviousApiKeyHash, responseBody, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ImportCarbonFactorsReturnsUnauthorizedWhenPreviousApiKeyHashIsRevoked()
+    {
+        using var revokedFactory = sourceFactory.WithWebHostBuilder(builder =>
+        {
+            builder.UseEnvironment("Testing");
+            builder.ConfigureAppConfiguration((_, configuration) =>
+            {
+                configuration.AddInMemoryCollection(CreateApiKeyConfiguration(
+                    previousKeyHashes: [PreviousApiKeyHash],
+                    revokedKeyHashes: [PreviousApiKeyHash]));
+            });
+        });
+
+        using var revokedClient = revokedFactory.CreateClient();
+        using var request = CreateImportRequestMessage(CreateValidImportRequest(), PreviousApiKey);
+
+        var response = await revokedClient.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        var responseBody = await response.Content.ReadAsStringAsync();
+        var payload = JsonDocument.Parse(responseBody).RootElement;
+        AssertErrorShape(payload, "unauthorized", "Unauthorized");
+        Assert.Equal("API key is revoked", payload.GetProperty("details").GetProperty("reason").GetString());
+        Assert.DoesNotContain(PreviousApiKey, responseBody, StringComparison.Ordinal);
+        Assert.DoesNotContain(PreviousApiKeyHash, responseBody, StringComparison.Ordinal);
+        Assert.DoesNotContain(TestApiKeyHash, responseBody, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ImportCarbonFactorsReturnsUnauthorizedWhenPreviousApiKeyHashConfigIsInvalid()
+    {
+        const string InvalidConfiguredHash = "not-a-sha256-hex";
+
+        using var invalidPreviousHashFactory = sourceFactory.WithWebHostBuilder(builder =>
+        {
+            builder.UseEnvironment("Testing");
+            builder.ConfigureAppConfiguration((_, configuration) =>
+            {
+                configuration.AddInMemoryCollection(CreateApiKeyConfiguration(previousKeyHashes: [InvalidConfiguredHash]));
+            });
+        });
+
+        using var invalidPreviousHashClient = invalidPreviousHashFactory.CreateClient();
+        using var request = CreateImportRequestMessage(CreateValidImportRequest(), TestApiKey);
+
+        var response = await invalidPreviousHashClient.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        var responseBody = await response.Content.ReadAsStringAsync();
+        var payload = JsonDocument.Parse(responseBody).RootElement;
+        AssertErrorShape(payload, "unauthorized", "Unauthorized");
+        Assert.Equal("import endpoint previous API key hash is invalid", payload.GetProperty("details").GetProperty("reason").GetString());
+        Assert.DoesNotContain(TestApiKey, responseBody, StringComparison.Ordinal);
+        Assert.DoesNotContain(TestApiKeyHash, responseBody, StringComparison.Ordinal);
+        Assert.DoesNotContain(InvalidConfiguredHash, responseBody, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ImportCarbonFactorsReturnsUnauthorizedWhenRevokedApiKeyHashConfigIsInvalid()
+    {
+        const string InvalidConfiguredHash = "not-a-sha256-hex";
+
+        using var invalidRevokedHashFactory = sourceFactory.WithWebHostBuilder(builder =>
+        {
+            builder.UseEnvironment("Testing");
+            builder.ConfigureAppConfiguration((_, configuration) =>
+            {
+                configuration.AddInMemoryCollection(CreateApiKeyConfiguration(revokedKeyHashes: [InvalidConfiguredHash]));
+            });
+        });
+
+        using var invalidRevokedHashClient = invalidRevokedHashFactory.CreateClient();
+        using var request = CreateImportRequestMessage(CreateValidImportRequest(), TestApiKey);
+
+        var response = await invalidRevokedHashClient.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        var responseBody = await response.Content.ReadAsStringAsync();
+        var payload = JsonDocument.Parse(responseBody).RootElement;
+        AssertErrorShape(payload, "unauthorized", "Unauthorized");
+        Assert.Equal("revoked API key hash is invalid", payload.GetProperty("details").GetProperty("reason").GetString());
+        Assert.DoesNotContain(TestApiKey, responseBody, StringComparison.Ordinal);
+        Assert.DoesNotContain(TestApiKeyHash, responseBody, StringComparison.Ordinal);
+        Assert.DoesNotContain(InvalidConfiguredHash, responseBody, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -745,13 +892,31 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
         string? tenantId = TestTenantId,
         string? importScope = ImportScope,
         bool includeScope = true,
-        string? plaintextKey = null)
+        string? plaintextKey = null,
+        IReadOnlyList<string>? previousKeyHashes = null,
+        IReadOnlyList<string>? revokedKeyHashes = null)
     {
         var configuration = new Dictionary<string, string?>();
 
         if (apiKeyHash is not null)
         {
             configuration["Security:ApiKey:ImportEndpointKeyHash"] = apiKeyHash;
+        }
+
+        if (previousKeyHashes is not null)
+        {
+            for (var index = 0; index < previousKeyHashes.Count; index++)
+            {
+                configuration[$"Security:ApiKey:ImportEndpointPreviousKeyHashes:{index}"] = previousKeyHashes[index];
+            }
+        }
+
+        if (revokedKeyHashes is not null)
+        {
+            for (var index = 0; index < revokedKeyHashes.Count; index++)
+            {
+                configuration[$"Security:ApiKey:RevokedKeyHashes:{index}"] = revokedKeyHashes[index];
+            }
         }
 
         if (plaintextKey is not null)

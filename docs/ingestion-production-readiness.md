@@ -155,3 +155,12 @@ This review indicates ingestion boundary behavior is consistent and deterministi
   - no DB-backed tenant store,
   - no import persistence/execution,
   - no tenant-scoped read filtering.
+
+## SEC-005 update (config-driven token revoke/rotation)
+
+- Import endpoint API key security remains configuration-driven.
+- `Security:ApiKey:ImportEndpointKeyHash` is the current accepted key hash.
+- `Security:ApiKey:ImportEndpointPreviousKeyHashes` can hold previous key hashes for a rotation window.
+- `Security:ApiKey:RevokedKeyHashes` can hold hashes that must fail closed before current or previous hash acceptance.
+- Invalid configured current, previous, or revoked hashes fail closed with deterministic `401 unauthorized`.
+- This is not a DB-backed token registry and does not add token generation, expiry scheduling, admin UI, external identity provider integration, or audit persistence.
