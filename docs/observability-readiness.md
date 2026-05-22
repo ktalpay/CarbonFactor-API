@@ -1,8 +1,8 @@
-# Observability Readiness (OPS-026 / OPS-027 / OPS-028)
+# Observability Readiness (OPS-026 / OPS-027 / OPS-028 / OPS-029)
 
 Date: 2026-05-22
 
-This document describes the structured logging, request correlation, and audit event baseline added for CarbonOps-API. It is intentionally narrow: OPS-026 establishes safe structured log events, OPS-027 adds request correlation IDs, OPS-028 adds an audit event model with a logging-backed sink, and durable audit persistence plus rate limiting remain separate follow-up work.
+This document describes the structured logging, request correlation, audit event, and rate limiting baseline added for CarbonOps-API. It is intentionally narrow: OPS-026 establishes safe structured log events, OPS-027 adds request correlation IDs, OPS-028 adds an audit event model with a logging-backed sink, and OPS-029 adds in-process rate limiting. Durable audit persistence, distributed throttling, API gateway/WAF integration, billing quotas, and API versioning remain separate follow-up work.
 
 ## Logging Baseline
 
@@ -16,6 +16,7 @@ New application log events use stable message templates with named properties:
 - `CarbonOps import authorization failed`
 - `CarbonOps import validation failed`
 - `CarbonOps import request accepted`
+- `CarbonOps rate limit rejected`
 
 ## Correlation ID Baseline
 
@@ -94,6 +95,7 @@ Current audit event types:
 - `import.authorization_failed`
 - `import.validation_failed`
 - `import.accepted`
+- `rate_limit.rejected`
 
 Audit events include safe structured fields where applicable:
 
@@ -120,6 +122,65 @@ Auth failure audit events use normalized reason codes, such as `invalid_api_key`
 
 This is not durable audit persistence. Audit events are not written to database tables, a queue, or an external SIEM/exporter in OPS-028.
 
+## Rate Limiting Boundary
+
+OPS-029 adds in-process ASP.NET Core rate limiting for the current API surface.
+
+Policy categories:
+
+- Import policy: `POST /carbon-factors/import`
+- Read policy: `GET /carbon-factors`, `GET /carbon-factors/search`, and `GET /carbon-factors/{factorId}`
+
+Default configuration:
+
+```json
+{
+  "RateLimiting": {
+    "Import": {
+      "PermitLimit": 10,
+      "WindowSeconds": 60,
+      "QueueLimit": 0
+    },
+    "Read": {
+      "PermitLimit": 60,
+      "WindowSeconds": 60,
+      "QueueLimit": 0
+    }
+  }
+}
+```
+
+Partitioning is intentionally simple for OPS-029:
+
+- remote IP address when available,
+- a fixed fallback partition for test/server contexts where remote IP is unavailable.
+
+The limiter does not use API keys, hashes, raw headers, raw query strings, request bodies, or correlation IDs as partition keys.
+
+Rate-limited responses return `429 Too Many Requests` with the existing JSON error-envelope style:
+
+- `code="rate_limited"`
+- `message="Too many requests"`
+- `details.reason="rate limit exceeded"`
+
+The response includes `Retry-After` and `X-Correlation-Id`. If the request supplied a valid correlation id, the response echoes it; otherwise the correlation middleware generates one before rate limiting runs.
+
+Rate limit rejections are logged at `Warning` with safe fields:
+
+- `endpoint`
+- `rate_limit_policy`
+- `reason_code="rate_limit_exceeded"`
+- `correlation_id` from the logging scope
+
+OPS-029 also emits a logging-backed audit event with `event_type="rate_limit.rejected"`, `outcome="failure"`, and `reason_code="rate_limit_exceeded"`.
+
+Operational endpoints are not rate-limited in OPS-029:
+
+- `GET /health`
+- `GET /health/live`
+- `GET /health/ready`
+- `GET /version`
+
 ## Secret Redaction And Non-Leakage
 
 Application logs must not include:
@@ -137,15 +198,19 @@ Application logs must not include:
 
 OPS-026/OPS-027 tests assert that import auth failure and accepted import logs do not contain API keys, hashes, configured scope values, plaintext dev key material, raw invalid correlation id values, or the raw `X-Api-Key` header name.
 
-OPS-028 tests assert that audit event logs do not contain provided API keys, configured hashes, configured scope values, plaintext development key material, raw headers, or request bodies.
+OPS-028/OPS-029 tests assert that audit event and rate-limit rejection logs do not contain provided API keys, configured hashes, configured scope values, plaintext development key material, raw headers, raw query strings, or request bodies.
 
 ## Current Boundaries
 
-OPS-026/OPS-027/OPS-028 do not add:
+OPS-026/OPS-027/OPS-028/OPS-029 do not add:
 
 - durable audit persistence,
 - external audit/SIEM integration,
-- rate limiting; OPS-029 covers this,
+- distributed rate limiting,
+- Redis or database-backed quota tracking,
+- API gateway/WAF configuration,
+- billing or plan quotas,
+- API versioning; OPS-030 covers this,
 - database logging,
 - third-party logging providers,
 - OpenTelemetry,

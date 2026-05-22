@@ -34,19 +34,22 @@ internal static class CarbonFactorEndpoints
 
         group.MapGet("/", (HttpRequest request, CarbonFactorUseCases useCases) =>
             ListCarbonFactors(request, useCases))
-            .WithMetadata(CarbonFactorEndpointExamples.ListFactorsSuccess);
+            .WithMetadata(CarbonFactorEndpointExamples.ListFactorsSuccess)
+            .RequireRateLimiting(CarbonOpsRateLimitingPolicyNames.Read);
 
         group.MapGet("/search", (HttpRequest request, CarbonFactorUseCases useCases) =>
             SearchCarbonFactors(request, useCases))
             .WithMetadata(
                 CarbonFactorEndpointExamples.SearchFactorsSuccess,
-                CarbonFactorEndpointExamples.SearchFactorsInvalidQuery);
+                CarbonFactorEndpointExamples.SearchFactorsInvalidQuery)
+            .RequireRateLimiting(CarbonOpsRateLimitingPolicyNames.Read);
 
         group.MapGet("/{factorId}", (string factorId, CarbonFactorUseCases useCases) =>
             GetCarbonFactorById(factorId, useCases))
             .WithMetadata(
                 CarbonFactorEndpointExamples.GetFactorByIdSuccess,
-                CarbonFactorEndpointExamples.GetFactorByIdNotFound);
+                CarbonFactorEndpointExamples.GetFactorByIdNotFound)
+            .RequireRateLimiting(CarbonOpsRateLimitingPolicyNames.Read);
 
         group.MapPost(
             "/import",
@@ -62,7 +65,8 @@ internal static class CarbonFactorEndpoints
                     boundaryService,
                     apiKeyOptions.Value,
                     loggerFactory.CreateLogger("CarbonOps.Api.Import"),
-                    auditEventSink));
+                    auditEventSink))
+            .RequireRateLimiting(CarbonOpsRateLimitingPolicyNames.Import);
 
         return endpoints;
     }
