@@ -17,6 +17,7 @@
 - [API Contract](api-contract.md)
 - [Contract Parity](contract-parity.md)
 - [Response Fixtures](response-fixtures.md)
+- [OpenAPI Contract Drift](openapi-contract-drift.md)
 - [HTTP Adapter](http-adapter.md)
 - [Transport Boundary](transport-boundary.md)
 
