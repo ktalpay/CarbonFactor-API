@@ -1,0 +1,229 @@
+{
+  "schema_version": 1,
+  "task": "PT-003",
+  "status": "baseline",
+  "description": "Minimal OpenAPI-adjacent public API metadata baseline for CarbonOps-API. This file records route, method, version-family, authentication, rate-limit, and example response status metadata without committing generated OpenAPI output.",
+  "openapi_support": {
+    "generation_available": false,
+    "discovery_result": "The .NET API does not currently reference Swashbuckle, Microsoft.AspNetCore.OpenApi, AddEndpointsApiExplorer, AddOpenApi, MapOpenApi, or Swagger UI wiring.",
+    "drift_check_strategy": "Compare ASP.NET Core EndpointDataSource route metadata against this small public metadata baseline."
+  },
+  "public_endpoint_metadata": [
+    {
+      "method": "GET",
+      "path": "/carbon-factors",
+      "route_version_family": "legacy",
+      "contract_family": "carbon_factor_read",
+      "authentication": "public",
+      "rate_limit_policy": "read",
+      "metadata_response_status_codes": [
+        200
+      ],
+      "response_headers": [
+        "X-Correlation-Id"
+      ],
+      "pt002_fixture": "carbon-factors-list.v1.json"
+    },
+    {
+      "method": "GET",
+      "path": "/carbon-factors/search",
+      "route_version_family": "legacy",
+      "contract_family": "carbon_factor_read",
+      "authentication": "public",
+      "rate_limit_policy": "read",
+      "metadata_response_status_codes": [
+        200,
+        400
+      ],
+      "response_headers": [
+        "X-Correlation-Id"
+      ],
+      "pt002_fixture": "carbon-factors-search-electricity.v1.json"
+    },
+    {
+      "method": "GET",
+      "path": "/carbon-factors/{factorId}",
+      "route_version_family": "legacy",
+      "contract_family": "carbon_factor_read",
+      "authentication": "public",
+      "rate_limit_policy": "read",
+      "metadata_response_status_codes": [
+        200,
+        404
+      ],
+      "response_headers": [
+        "X-Correlation-Id"
+      ],
+      "pt002_fixture": "carbon-factor-f001.v1.json"
+    },
+    {
+      "method": "POST",
+      "path": "/carbon-factors/import",
+      "route_version_family": "legacy",
+      "contract_family": "carbon_factor_import",
+      "authentication": "api_key",
+      "required_request_headers": [
+        "X-Api-Key"
+      ],
+      "rate_limit_policy": "import",
+      "metadata_response_status_codes": [],
+      "response_headers": [
+        "X-Correlation-Id"
+      ],
+      "pt002_fixture": "import-accepted.v1.json"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/carbon-factors",
+      "route_version_family": "v1",
+      "contract_family": "carbon_factor_read",
+      "authentication": "public",
+      "rate_limit_policy": "read",
+      "metadata_response_status_codes": [
+        200
+      ],
+      "response_headers": [
+        "X-Correlation-Id"
+      ],
+      "pt002_fixture": "carbon-factors-list.v1.json"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/carbon-factors/search",
+      "route_version_family": "v1",
+      "contract_family": "carbon_factor_read",
+      "authentication": "public",
+      "rate_limit_policy": "read",
+      "metadata_response_status_codes": [
+        200,
+        400
+      ],
+      "response_headers": [
+        "X-Correlation-Id"
+      ],
+      "pt002_fixture": "carbon-factors-search-electricity.v1.json"
+    },
+    {
+      "method": "GET",
+      "path": "/v1/carbon-factors/{factorId}",
+      "route_version_family": "v1",
+      "contract_family": "carbon_factor_read",
+      "authentication": "public",
+      "rate_limit_policy": "read",
+      "metadata_response_status_codes": [
+        200,
+        404
+      ],
+      "response_headers": [
+        "X-Correlation-Id"
+      ],
+      "pt002_fixture": "carbon-factor-f001.v1.json"
+    },
+    {
+      "method": "POST",
+      "path": "/v1/carbon-factors/import",
+      "route_version_family": "v1",
+      "contract_family": "carbon_factor_import",
+      "authentication": "api_key",
+      "required_request_headers": [
+        "X-Api-Key"
+      ],
+      "rate_limit_policy": "import",
+      "metadata_response_status_codes": [],
+      "response_headers": [
+        "X-Correlation-Id"
+      ],
+      "pt002_fixture": "import-accepted.v1.json"
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "route_version_family": "operational",
+      "contract_family": "operational",
+      "authentication": "public",
+      "rate_limit_policy": "none",
+      "metadata_response_status_codes": [
+        200
+      ],
+      "response_headers": [
+        "X-Correlation-Id"
+      ],
+      "pt002_fixture": "health.json"
+    },
+    {
+      "method": "GET",
+      "path": "/health/live",
+      "route_version_family": "operational",
+      "contract_family": "operational",
+      "authentication": "public",
+      "rate_limit_policy": "none",
+      "metadata_response_status_codes": [
+        200
+      ],
+      "response_headers": [
+        "X-Correlation-Id"
+      ],
+      "pt002_fixture": "health-live.json"
+    },
+    {
+      "method": "GET",
+      "path": "/health/ready",
+      "route_version_family": "operational",
+      "contract_family": "operational",
+      "authentication": "public",
+      "rate_limit_policy": "none",
+      "metadata_response_status_codes": [
+        200
+      ],
+      "response_headers": [
+        "X-Correlation-Id"
+      ],
+      "pt002_fixture": "health-ready.json"
+    },
+    {
+      "method": "GET",
+      "path": "/version",
+      "route_version_family": "operational",
+      "contract_family": "operational",
+      "authentication": "public",
+      "rate_limit_policy": "none",
+      "metadata_response_status_codes": [
+        200
+      ],
+      "response_headers": [
+        "X-Correlation-Id"
+      ],
+      "pt002_fixture": "version.json"
+    }
+  ],
+  "excluded_public_routes": [
+    "GET /v1/health"
+  ],
+  "metadata_categories": {
+    "route_version_family": [
+      "legacy",
+      "v1",
+      "operational"
+    ],
+    "authentication": [
+      "public",
+      "api_key"
+    ],
+    "rate_limit_policy": [
+      "read",
+      "import",
+      "none"
+    ]
+  },
+  "non_goals": [
+    "no generated clients in PT-003",
+    "no generated OpenAPI artifact committed in PT-003",
+    "no full response fixture comparison in PT-003",
+    "no public API response shape changes in PT-003",
+    "no runtime behavior changes in PT-003",
+    "no production parity review in PT-003"
+  ],
+  "follow_ups": [
+    "PT-004 production parity review"
+  ]
+}

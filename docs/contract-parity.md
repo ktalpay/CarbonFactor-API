@@ -17,6 +17,14 @@ Response fixture comparison added by PT-002 is documented in
 tests/contract-fixtures/http/
 ```
 
+OpenAPI-adjacent public metadata drift checking added by PT-003 is
+documented in `docs/openapi-contract-drift.md`. The checked-in metadata
+baseline lives under:
+
+```text
+tests/contract-fixtures/openapi/openapi-public-metadata-baseline.json
+```
+
 ## Purpose
 
 The repository has two runtime roots:
@@ -158,5 +166,5 @@ PT-001 does not add:
 
 - PT-002 adds response fixture comparison for representative public contract
   shapes.
-- PT-003 should add OpenAPI contract drift checking.
+- PT-003 adds OpenAPI-adjacent public metadata drift checking.
 - PT-004 should perform the production parity review.

@@ -91,5 +91,5 @@ PT-002 does not add:
 
 ## Follow-Up Mapping
 
-- PT-003 should add OpenAPI contract drift checking.
+- PT-003 adds OpenAPI-adjacent public metadata drift checking.
 - PT-004 should perform the production parity review.
