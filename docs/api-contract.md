@@ -341,3 +341,43 @@ See also: `docs/ingestion-production-readiness.md` for ING-007 production-readin
 ## Security production readiness (SEC-007)
 
 See `docs/security-production-readiness.md` for the repository-grounded production readiness review of the current config-driven API security model.
+
+## API route versioning strategy (OPS-030)
+
+OPS-030 adds route-based API versioning for the carbon factor API surface without removing existing unversioned routes.
+
+Versioned `v1` routes:
+
+- `GET /v1/carbon-factors`
+- `GET /v1/carbon-factors/search`
+- `GET /v1/carbon-factors/{factorId}`
+- `POST /v1/carbon-factors/import`
+
+Legacy compatibility routes remain supported:
+
+- `GET /carbon-factors`
+- `GET /carbon-factors/search`
+- `GET /carbon-factors/{factorId}`
+- `POST /carbon-factors/import`
+
+Operational endpoints remain unversioned:
+
+- `GET /health`
+- `GET /health/live`
+- `GET /health/ready`
+- `GET /version`
+
+`/v1/health` is not introduced. The `/version` response body remains unchanged in OPS-030.
+
+Compatibility policy:
+
+- `v1` and legacy carbon factor routes use the same endpoint handlers.
+- Response body shapes are unchanged.
+- Import authentication and authorization behavior is identical for legacy and `v1` import routes.
+- Import execution and persistence semantics remain unchanged (`persisted=false`, `import_execution="not_started"`).
+- Read endpoints remain public and rate-limited.
+- OPS-029 import/read rate limiting policies apply to both legacy and `v1` carbon factor routes.
+- Correlation id middleware applies to both legacy and `v1` routes.
+- Import logs and audit events use the actual request path as the endpoint field, so `/v1/carbon-factors/import` requests are distinguishable from legacy `/carbon-factors/import` requests without logging raw query strings.
+
+Future breaking HTTP contract changes should use a new route prefix such as `/v2` rather than changing `v1` response bodies in place.

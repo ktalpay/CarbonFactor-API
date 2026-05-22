@@ -1,8 +1,8 @@
-# Observability Readiness (OPS-026 / OPS-027 / OPS-028 / OPS-029)
+# Observability Readiness (OPS-026 / OPS-027 / OPS-028 / OPS-029 / OPS-030)
 
 Date: 2026-05-22
 
-This document describes the structured logging, request correlation, audit event, and rate limiting baseline added for CarbonOps-API. It is intentionally narrow: OPS-026 establishes safe structured log events, OPS-027 adds request correlation IDs, OPS-028 adds an audit event model with a logging-backed sink, and OPS-029 adds in-process rate limiting. Durable audit persistence, distributed throttling, API gateway/WAF integration, billing quotas, and API versioning remain separate follow-up work.
+This document describes the structured logging, request correlation, audit event, rate limiting, and versioned-route observability baseline added for CarbonOps-API. It is intentionally narrow: OPS-026 establishes safe structured log events, OPS-027 adds request correlation IDs, OPS-028 adds an audit event model with a logging-backed sink, OPS-029 adds in-process rate limiting, and OPS-030 adds `/v1` carbon factor route aliases. Durable audit persistence, distributed throttling, API gateway/WAF integration, billing quotas, and future API version lifecycles remain separate follow-up work.
 
 ## Logging Baseline
 
@@ -128,8 +128,8 @@ OPS-029 adds in-process ASP.NET Core rate limiting for the current API surface.
 
 Policy categories:
 
-- Import policy: `POST /carbon-factors/import`
-- Read policy: `GET /carbon-factors`, `GET /carbon-factors/search`, and `GET /carbon-factors/{factorId}`
+- Import policy: `POST /carbon-factors/import` and `POST /v1/carbon-factors/import`
+- Read policy: legacy and `v1` `GET /carbon-factors`, `GET /carbon-factors/search`, and `GET /carbon-factors/{factorId}` routes
 
 Default configuration:
 
@@ -181,6 +181,17 @@ Operational endpoints are not rate-limited in OPS-029:
 - `GET /health/ready`
 - `GET /version`
 
+## Versioned Route Observability
+
+OPS-030 adds `v1` carbon factor routes while preserving legacy unversioned routes.
+
+Import logs and import audit events use the actual request path in the `endpoint` field. This means:
+
+- legacy import requests report `endpoint="/carbon-factors/import"`,
+- `v1` import requests report `endpoint="/v1/carbon-factors/import"`.
+
+Rate limit rejection logs and `rate_limit.rejected` audit events also report the matched legacy or `v1` endpoint path. Raw query strings are not logged.
+
 ## Secret Redaction And Non-Leakage
 
 Application logs must not include:
@@ -202,7 +213,7 @@ OPS-028/OPS-029 tests assert that audit event and rate-limit rejection logs do n
 
 ## Current Boundaries
 
-OPS-026/OPS-027/OPS-028/OPS-029 do not add:
+OPS-026/OPS-027/OPS-028/OPS-029/OPS-030 do not add:
 
 - durable audit persistence,
 - external audit/SIEM integration,
@@ -210,7 +221,7 @@ OPS-026/OPS-027/OPS-028/OPS-029 do not add:
 - Redis or database-backed quota tracking,
 - API gateway/WAF configuration,
 - billing or plan quotas,
-- API versioning; OPS-030 covers this,
+- future version lifecycle tooling or OpenAPI generation overhaul,
 - database logging,
 - third-party logging providers,
 - OpenTelemetry,

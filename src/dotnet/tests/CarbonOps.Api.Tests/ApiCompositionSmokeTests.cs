@@ -51,7 +51,11 @@ public sealed class ApiCompositionSmokeTests : IClassFixture<WebApplicationFacto
                 "/carbon-factors",
                 "/carbon-factors/import",
                 "/carbon-factors/search",
-                "/carbon-factors/{factorId}"
+                "/carbon-factors/{factorId}",
+                "/v1/carbon-factors",
+                "/v1/carbon-factors/import",
+                "/v1/carbon-factors/search",
+                "/v1/carbon-factors/{factorId}"
             },
             routeEndpoints);
     }
@@ -64,6 +68,9 @@ public sealed class ApiCompositionSmokeTests : IClassFixture<WebApplicationFacto
     [InlineData("/carbon-factors", HttpStatusCode.OK)]
     [InlineData("/carbon-factors/search", HttpStatusCode.OK)]
     [InlineData("/carbon-factors/f-001", HttpStatusCode.OK)]
+    [InlineData("/v1/carbon-factors", HttpStatusCode.OK)]
+    [InlineData("/v1/carbon-factors/search", HttpStatusCode.OK)]
+    [InlineData("/v1/carbon-factors/f-001", HttpStatusCode.OK)]
     public async Task ExpectedGetEndpointsAreReachable(string route, HttpStatusCode expectedStatusCode)
     {
         var response = await client.GetAsync(route);

@@ -206,9 +206,9 @@ Recommended hardening:
 - Add monitoring and alerting around auth failures, import rejection spikes, and rate-limit activity.
 - Add a test-maintenance pass for the existing `xUnit1013` warning.
 
-## OPS-026/OPS-027/OPS-028/OPS-029 Observability Baseline
+## OPS-026 Through OPS-030 Operational Baseline
 
-See `docs/observability-readiness.md` for the current structured logging, request correlation, audit event, and in-process rate limiting baseline. OPS-026 adds safe named-field logs for startup configuration summary and import lifecycle events, OPS-027 adds `X-Correlation-Id` middleware and `correlation_id` logging scope enrichment, OPS-028 adds a logging-backed audit event model, and OPS-029 adds import/read rate limiting boundaries. Durable audit persistence, external audit export, distributed rate limiting, and API gateway/WAF integration remain follow-up work.
+See `docs/observability-readiness.md` for the current structured logging, request correlation, audit event, in-process rate limiting, and versioned-route observability baseline. OPS-026 adds safe named-field logs for startup configuration summary and import lifecycle events, OPS-027 adds `X-Correlation-Id` middleware and `correlation_id` logging scope enrichment, OPS-028 adds a logging-backed audit event model, OPS-029 adds import/read rate limiting boundaries, and OPS-030 adds `/v1` carbon factor routes while preserving legacy unversioned routes. Durable audit persistence, external audit export, distributed rate limiting, API gateway/WAF integration, and future version lifecycle tooling remain follow-up work.
 
 ## Follow-Up Task Mapping
 
@@ -218,7 +218,7 @@ SEC-007 unblocks OPS-026. The current risk mapping is:
 - OPS-027 correlation id middleware: needed for request tracing across import boundary handling.
 - OPS-028 audit event model: needed for durable auth and import boundary decision records.
 - OPS-029 rate limiting boundary: needed to reduce brute force, replay, and import abuse risk.
-- OPS-030 API versioning strategy: needed before broad public or customer-facing API commitments.
+- OPS-030 API versioning strategy: establishes `/v1` carbon factor routes and keeps legacy compatibility; future version lifecycle tooling may still be needed before broad public or customer-facing API commitments.
 - OPS-031 environment config hardening: needed for production config validation and secret-management guidance.
 - OPS-032 deployment packaging baseline: needed for reproducible deployment and environment separation.
 - OPS-033 production runbook: needed for key compromise, rotation, revoke, incident, and rollback procedures.
