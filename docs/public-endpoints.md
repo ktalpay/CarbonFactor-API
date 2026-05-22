@@ -525,6 +525,7 @@ There is no removal timeline for legacy routes yet.
 
 Related evidence:
 
+- `docs/architecture.md`
 - `docs/api-contract.md`
 - `docs/contract-parity.md`
 - `docs/response-fixtures.md`
