@@ -14,6 +14,7 @@
 
 ## Current API Contract
 
+- [Public Endpoints](public-endpoints.md)
 - [API Contract](api-contract.md)
 - [Contract Parity](contract-parity.md)
 - [Response Fixtures](response-fixtures.md)
