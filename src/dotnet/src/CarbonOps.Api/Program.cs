@@ -7,10 +7,12 @@ builder.Services
     .AddOptions<ApiKeyAuthenticationOptions>()
     .Bind(builder.Configuration.GetSection(ApiKeyAuthenticationOptions.SectionName));
 builder.Services.AddSingleton<IAuditEventSink, LoggingAuditEventSink>();
+builder.Services.AddSingleton<CarbonOpsProductionConfigurationValidator>();
 builder.Services.AddCarbonOpsRateLimiting(builder.Configuration);
 builder.Services.AddCarbonFactorServices(builder.Configuration);
 var app = builder.Build();
 
+ValidateProductionConfiguration(app);
 LogStartupConfiguration(app);
 
 app.UseMiddleware<CorrelationIdMiddleware>();
@@ -39,6 +41,18 @@ static void LogStartupConfiguration(WebApplication app)
         apiKeyOptions.RevokedKeyHashes?.Length ?? 0,
         !string.IsNullOrWhiteSpace(apiKeyOptions.ImportTenantId),
         apiKeyOptions.ImportEndpointScopes?.Length ?? 0);
+}
+
+static void ValidateProductionConfiguration(WebApplication app)
+{
+    if (!app.Environment.IsProduction())
+    {
+        return;
+    }
+
+    app.Services
+        .GetRequiredService<CarbonOpsProductionConfigurationValidator>()
+        .Validate();
 }
 
 public partial class Program

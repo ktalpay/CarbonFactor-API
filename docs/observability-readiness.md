@@ -57,6 +57,8 @@ At startup, the API logs a safe configuration summary with counts and booleans o
 
 The startup log does not include key values, hashes, tenant values, scopes, connection strings, or raw configuration sections.
 
+Production startup configuration validation is covered in `docs/environment-config-hardening.md`. Validation failures identify unsafe keys and issue types without including configured secret values.
+
 ## Import Lifecycle Logging
 
 Import authorization failures are logged at `Warning` with:
