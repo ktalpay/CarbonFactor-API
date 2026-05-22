@@ -9,6 +9,8 @@ namespace CarbonOps.Api;
 internal static class CarbonFactorEndpoints
 {
     private const string ImportEndpointRequiredScope = "carbon_factors:import";
+    private const string ImportEndpointPath = "/carbon-factors/import";
+    private const string ImportAuthenticationScheme = "api_key";
 
     private static readonly string[] SupportedSearchFilters =
     [
@@ -46,8 +48,13 @@ internal static class CarbonFactorEndpoints
                 CarbonFactorEndpointExamples.GetFactorByIdSuccess,
                 CarbonFactorEndpointExamples.GetFactorByIdNotFound);
 
-        group.MapPost("/import", (HttpRequest httpRequest, ParserCarbonFactorBatchImportRequest request, CarbonFactorImportBoundaryService boundaryService, IOptions<ApiKeyAuthenticationOptions> apiKeyOptions) =>
-            ImportCarbonFactors(httpRequest, request, boundaryService, apiKeyOptions.Value));
+        group.MapPost("/import", (HttpRequest httpRequest, ParserCarbonFactorBatchImportRequest request, CarbonFactorImportBoundaryService boundaryService, IOptions<ApiKeyAuthenticationOptions> apiKeyOptions, ILoggerFactory loggerFactory) =>
+            ImportCarbonFactors(
+                httpRequest,
+                request,
+                boundaryService,
+                apiKeyOptions.Value,
+                loggerFactory.CreateLogger("CarbonOps.Api.Import")));
 
         return endpoints;
     }
@@ -86,19 +93,34 @@ internal static class CarbonFactorEndpoints
         HttpRequest httpRequest,
         ParserCarbonFactorBatchImportRequest request,
         CarbonFactorImportBoundaryService boundaryService,
-        ApiKeyAuthenticationOptions apiKeyOptions)
+        ApiKeyAuthenticationOptions apiKeyOptions,
+        ILogger logger)
     {
-        var importAuthContext = EnsureAuthorized(httpRequest, apiKeyOptions).GetValueOrThrow();
-
-        var result = boundaryService.ValidateAndAccept(request).GetValueOrThrow();
-        var scopedResult = result with
+        var importAuthResult = EnsureAuthorized(httpRequest, apiKeyOptions);
+        if (!importAuthResult.IsSuccess)
         {
-            Audit = result.Audit with
+            LogImportAuthorizationFailure(logger, importAuthResult.Error!);
+        }
+
+        var importAuthContext = importAuthResult.GetValueOrThrow();
+
+        var result = boundaryService.ValidateAndAccept(request);
+        if (!result.IsSuccess)
+        {
+            LogImportValidationFailure(logger, result.Error!);
+        }
+
+        var acceptedResult = result.GetValueOrThrow();
+        var scopedResult = acceptedResult with
+        {
+            Audit = acceptedResult.Audit with
             {
                 TenantId = importAuthContext.TenantId,
                 AuthenticationScheme = importAuthContext.AuthenticationScheme
             }
         };
+
+        LogImportAccepted(logger, scopedResult);
 
         return TypedResults.Accepted($"/carbon-factors/import/{scopedResult.BatchId}", scopedResult);
     }
@@ -175,7 +197,71 @@ internal static class CarbonFactorEndpoints
         }
 
         return ApplicationResult<ImportAuthenticationContext>.Success(
-            new ImportAuthenticationContext(options.ImportTenantId.Trim(), "api_key"));
+            new ImportAuthenticationContext(options.ImportTenantId.Trim(), ImportAuthenticationScheme));
+    }
+
+    private static void LogImportAuthorizationFailure(ILogger logger, ApiError error)
+    {
+        logger.LogWarning(
+            "CarbonOps import authorization failed {endpoint} {auth_failure_reason} {authentication_scheme}",
+            ImportEndpointPath,
+            ResolveAuthorizationFailureReason(error),
+            ImportAuthenticationScheme);
+    }
+
+    private static void LogImportValidationFailure(ILogger logger, ApiError error)
+    {
+        logger.LogInformation(
+            "CarbonOps import validation failed {endpoint} {validation_failure_reason}",
+            ImportEndpointPath,
+            ResolveErrorReason(error));
+    }
+
+    private static void LogImportAccepted(ILogger logger, CarbonFactorImportBoundaryResponse response)
+    {
+        logger.LogInformation(
+            "CarbonOps import request accepted {endpoint} {authentication_scheme} {tenant_id} {batch_id} {validation_status} {accepted_records} {rejected_records} {error_count} {warning_count} {persisted} {import_execution}",
+            ImportEndpointPath,
+            response.Audit.AuthenticationScheme,
+            response.Audit.TenantId,
+            response.BatchId,
+            response.ValidationStatus,
+            response.AcceptedRecords,
+            response.RejectedRecords,
+            response.ErrorCount,
+            response.WarningCount,
+            response.Persisted,
+            response.ImportExecution);
+    }
+
+    private static string ResolveAuthorizationFailureReason(ApiError error)
+    {
+        return ResolveErrorReason(error) switch
+        {
+            "import endpoint API key hash is not configured" => "missing_current_hash_config",
+            "import endpoint API key hash is invalid" => "invalid_current_hash_config",
+            "import endpoint previous API key hash is invalid" => "invalid_previous_hash_config",
+            "revoked API key hash is invalid" => "invalid_revoked_hash_config",
+            "missing API key" => "missing_api_key",
+            "API key is revoked" => "revoked_api_key",
+            "invalid API key" => "invalid_api_key",
+            "import tenant is not configured" => "missing_tenant_config",
+            "import endpoint scope is not configured" => "missing_scope_config",
+            "API key is not permitted to import carbon factors" => "insufficient_scope",
+            _ => "unauthorized"
+        };
+    }
+
+    private static string ResolveErrorReason(ApiError error)
+    {
+        if (error.Details.TryGetValue("reason", out var reason)
+            && reason is string reasonValue
+            && !string.IsNullOrWhiteSpace(reasonValue))
+        {
+            return reasonValue;
+        }
+
+        return error.Code;
     }
 
     private static ApplicationResult<string[]> TryNormalizeConfiguredKeyHashes(

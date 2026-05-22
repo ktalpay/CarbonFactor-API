@@ -207,6 +207,10 @@ Recommended hardening:
 - Add monitoring and alerting around auth failures, import rejection spikes, and rate-limit activity.
 - Add a test-maintenance pass for the existing `xUnit1013` warning.
 
+## OPS-026 Structured Logging Baseline
+
+See `docs/observability-readiness.md` for the current structured logging baseline. OPS-026 adds safe named-field logs for startup configuration summary and import lifecycle events without adding correlation ID middleware, durable audit events, or rate limiting.
+
 ## Follow-Up Task Mapping
 
 SEC-007 unblocks OPS-026. The current risk mapping is:
