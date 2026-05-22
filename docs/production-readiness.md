@@ -8,6 +8,8 @@ This document consolidates the current CarbonOps-API production readiness eviden
 
 It is an input to REL-001. It is not a broad production readiness approval, release sign-off, deployment automation guide, or replacement for the operator runbook.
 
+The REL-001 review is captured in `docs/production-readiness-review.md`.
+
 DOC-004 does not change runtime behavior, public API contracts, fixtures, metadata baselines, Docker packaging, scripts, or deployment infrastructure.
 
 ## Current Readiness Summary
