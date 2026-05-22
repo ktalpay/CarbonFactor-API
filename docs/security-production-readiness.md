@@ -122,7 +122,7 @@ Current behavior:
   - wrong keys
   - configured scopes
 
-Production implication: the current unauthorized error behavior is deterministic and avoids obvious key/config leakage. Before broad production, auth failures should also produce structured server-side audit events without exposing secret material in logs.
+Production implication: the current unauthorized error behavior is deterministic and avoids obvious key/config leakage. OPS-028 adds logging-backed audit events for auth and import boundary decisions without exposing secret material; broad production still needs durable audit persistence and retention policy.
 
 ## Import Response Invariants
 
@@ -178,7 +178,7 @@ The current security model is suitable for a controlled internal pilot when:
 
 ### Not Ready For Broad Production Exposure
 
-The current model is not ready for broad production exposure because it lacks durable token lifecycle, tenant registry, operational audit persistence, rate limiting, structured logging, correlation IDs, secret-management guidance, and production runbooks.
+The current model is not ready for broad production exposure because it lacks durable token lifecycle, tenant registry, durable audit event persistence, rate limiting, secret-management guidance, and production runbooks.
 
 ### Required Before Broad Production
 
@@ -189,10 +189,9 @@ Required before broad production:
 - Stronger token lifecycle controls around hashing, storage, rotation, revocation, and emergency disablement.
 - Token generation, rotation, and revoke APIs or a documented operator workflow.
 - Token expiry policy and enforcement.
-- Audit event persistence for auth decisions and import boundary actions.
+- Durable audit event persistence for auth decisions and import boundary actions.
 - Rate limiting for protected and potentially expensive endpoints.
-- Structured logging with secret redaction.
-- Correlation ID middleware and request tracing.
+- Production logging deployment guidance for the existing structured logging and correlation id baseline.
 - Secret management and deployment guidance for non-development environments.
 - Tenant-scoped read filtering if read endpoints become protected customer endpoints or expose tenant-specific data.
 
@@ -207,9 +206,9 @@ Recommended hardening:
 - Add monitoring and alerting around auth failures, import rejection spikes, and rate-limit activity.
 - Add a test-maintenance pass for the existing `xUnit1013` warning.
 
-## OPS-026/OPS-027 Observability Baseline
+## OPS-026/OPS-027/OPS-028 Observability Baseline
 
-See `docs/observability-readiness.md` for the current structured logging and request correlation baseline. OPS-026 adds safe named-field logs for startup configuration summary and import lifecycle events; OPS-027 adds `X-Correlation-Id` middleware and `correlation_id` logging scope enrichment without adding durable audit events or rate limiting.
+See `docs/observability-readiness.md` for the current structured logging, request correlation, and audit event baseline. OPS-026 adds safe named-field logs for startup configuration summary and import lifecycle events, OPS-027 adds `X-Correlation-Id` middleware and `correlation_id` logging scope enrichment, and OPS-028 adds a logging-backed audit event model. Durable audit persistence, external audit export, and rate limiting remain follow-up work.
 
 ## Follow-Up Task Mapping
 

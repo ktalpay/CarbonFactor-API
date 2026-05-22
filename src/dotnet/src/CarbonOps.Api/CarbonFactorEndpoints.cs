@@ -48,13 +48,21 @@ internal static class CarbonFactorEndpoints
                 CarbonFactorEndpointExamples.GetFactorByIdSuccess,
                 CarbonFactorEndpointExamples.GetFactorByIdNotFound);
 
-        group.MapPost("/import", (HttpRequest httpRequest, ParserCarbonFactorBatchImportRequest request, CarbonFactorImportBoundaryService boundaryService, IOptions<ApiKeyAuthenticationOptions> apiKeyOptions, ILoggerFactory loggerFactory) =>
-            ImportCarbonFactors(
-                httpRequest,
-                request,
-                boundaryService,
-                apiKeyOptions.Value,
-                loggerFactory.CreateLogger("CarbonOps.Api.Import")));
+        group.MapPost(
+            "/import",
+            (HttpRequest httpRequest,
+                ParserCarbonFactorBatchImportRequest request,
+                CarbonFactorImportBoundaryService boundaryService,
+                IOptions<ApiKeyAuthenticationOptions> apiKeyOptions,
+                ILoggerFactory loggerFactory,
+                IAuditEventSink auditEventSink) =>
+                ImportCarbonFactors(
+                    httpRequest,
+                    request,
+                    boundaryService,
+                    apiKeyOptions.Value,
+                    loggerFactory.CreateLogger("CarbonOps.Api.Import"),
+                    auditEventSink));
 
         return endpoints;
     }
@@ -89,17 +97,23 @@ internal static class CarbonFactorEndpoints
                 .GetValueOrThrow());
     }
 
-    private static IResult ImportCarbonFactors(
+    private static async Task<IResult> ImportCarbonFactors(
         HttpRequest httpRequest,
         ParserCarbonFactorBatchImportRequest request,
         CarbonFactorImportBoundaryService boundaryService,
         ApiKeyAuthenticationOptions apiKeyOptions,
-        ILogger logger)
+        ILogger logger,
+        IAuditEventSink auditEventSink)
     {
         var importAuthResult = EnsureAuthorized(httpRequest, apiKeyOptions);
         if (!importAuthResult.IsSuccess)
         {
             LogImportAuthorizationFailure(logger, importAuthResult.Error!);
+            await auditEventSink.WriteAsync(
+                CreateImportAuthorizationFailedAuditEvent(
+                    httpRequest.HttpContext,
+                    ResolveAuthorizationFailureReason(importAuthResult.Error!)),
+                httpRequest.HttpContext.RequestAborted);
         }
 
         var importAuthContext = importAuthResult.GetValueOrThrow();
@@ -108,6 +122,12 @@ internal static class CarbonFactorEndpoints
         if (!result.IsSuccess)
         {
             LogImportValidationFailure(logger, result.Error!);
+            await auditEventSink.WriteAsync(
+                CreateImportValidationFailedAuditEvent(
+                    httpRequest.HttpContext,
+                    importAuthContext,
+                    result.Error!),
+                httpRequest.HttpContext.RequestAborted);
         }
 
         var acceptedResult = result.GetValueOrThrow();
@@ -121,6 +141,9 @@ internal static class CarbonFactorEndpoints
         };
 
         LogImportAccepted(logger, scopedResult);
+        await auditEventSink.WriteAsync(
+            CreateImportAcceptedAuditEvent(httpRequest.HttpContext, scopedResult),
+            httpRequest.HttpContext.RequestAborted);
 
         return TypedResults.Accepted($"/carbon-factors/import/{scopedResult.BatchId}", scopedResult);
     }
@@ -234,6 +257,93 @@ internal static class CarbonFactorEndpoints
             response.ImportExecution);
     }
 
+    private static AuditEvent CreateImportAuthorizationFailedAuditEvent(
+        HttpContext httpContext,
+        string reasonCode)
+    {
+        return CreateAuditEvent(
+            eventType: AuditEventTypes.ImportAuthorizationFailed,
+            severity: AuditEventSeverity.Warning,
+            httpContext: httpContext,
+            outcome: AuditEventOutcomes.Failure,
+            reasonCode: reasonCode,
+            authenticationScheme: ImportAuthenticationScheme);
+    }
+
+    private static AuditEvent CreateImportValidationFailedAuditEvent(
+        HttpContext httpContext,
+        ImportAuthenticationContext importAuthContext,
+        ApiError error)
+    {
+        return CreateAuditEvent(
+            eventType: AuditEventTypes.ImportValidationFailed,
+            severity: AuditEventSeverity.Information,
+            httpContext: httpContext,
+            outcome: AuditEventOutcomes.Failure,
+            reasonCode: ResolveValidationFailureReason(error),
+            authenticationScheme: importAuthContext.AuthenticationScheme,
+            tenantId: importAuthContext.TenantId);
+    }
+
+    private static AuditEvent CreateImportAcceptedAuditEvent(
+        HttpContext httpContext,
+        CarbonFactorImportBoundaryResponse response)
+    {
+        return CreateAuditEvent(
+            eventType: AuditEventTypes.ImportAccepted,
+            severity: AuditEventSeverity.Information,
+            httpContext: httpContext,
+            outcome: AuditEventOutcomes.Success,
+            authenticationScheme: response.Audit.AuthenticationScheme,
+            tenantId: response.Audit.TenantId,
+            batchId: response.BatchId,
+            validationStatus: response.ValidationStatus,
+            acceptedRecords: response.AcceptedRecords,
+            rejectedRecords: response.RejectedRecords,
+            errorCount: response.ErrorCount,
+            warningCount: response.WarningCount,
+            persisted: response.Persisted,
+            importExecution: response.ImportExecution);
+    }
+
+    private static AuditEvent CreateAuditEvent(
+        string eventType,
+        string severity,
+        HttpContext httpContext,
+        string outcome,
+        string? reasonCode = null,
+        string? authenticationScheme = null,
+        string? tenantId = null,
+        string? batchId = null,
+        string? validationStatus = null,
+        int? acceptedRecords = null,
+        int? rejectedRecords = null,
+        int? errorCount = null,
+        int? warningCount = null,
+        bool? persisted = null,
+        string? importExecution = null)
+    {
+        return new AuditEvent(
+            EventId: Guid.NewGuid().ToString(),
+            EventType: eventType,
+            OccurredAtUtc: DateTimeOffset.UtcNow,
+            Severity: severity,
+            Endpoint: ImportEndpointPath,
+            CorrelationId: httpContext.GetCorrelationId(),
+            Outcome: outcome,
+            ReasonCode: reasonCode,
+            AuthenticationScheme: authenticationScheme,
+            TenantId: tenantId,
+            BatchId: batchId,
+            ValidationStatus: validationStatus,
+            AcceptedRecords: acceptedRecords,
+            RejectedRecords: rejectedRecords,
+            ErrorCount: errorCount,
+            WarningCount: warningCount,
+            Persisted: persisted,
+            ImportExecution: importExecution);
+    }
+
     private static string ResolveAuthorizationFailureReason(ApiError error)
     {
         return ResolveErrorReason(error) switch
@@ -250,6 +360,11 @@ internal static class CarbonFactorEndpoints
             "API key is not permitted to import carbon factors" => "insufficient_scope",
             _ => "unauthorized"
         };
+    }
+
+    private static string ResolveValidationFailureReason(ApiError error)
+    {
+        return error.Code;
     }
 
     private static string ResolveErrorReason(ApiError error)

@@ -1,8 +1,8 @@
-# Observability Readiness (OPS-026 / OPS-027)
+# Observability Readiness (OPS-026 / OPS-027 / OPS-028)
 
 Date: 2026-05-22
 
-This document describes the structured logging and request correlation baseline added for CarbonOps-API. It is intentionally narrow: OPS-026 establishes safe structured log events, OPS-027 adds request correlation IDs, and durable audit events plus rate limiting remain separate follow-up work.
+This document describes the structured logging, request correlation, and audit event baseline added for CarbonOps-API. It is intentionally narrow: OPS-026 establishes safe structured log events, OPS-027 adds request correlation IDs, OPS-028 adds an audit event model with a logging-backed sink, and durable audit persistence plus rate limiting remain separate follow-up work.
 
 ## Logging Baseline
 
@@ -85,6 +85,41 @@ Accepted import boundary requests are logged at `Information` with:
 
 The accepted import event is emitted after successful API key authentication and after the import boundary response has been produced. It does not change the public import response shape or import execution behavior.
 
+## Audit Event Baseline
+
+OPS-028 adds internal audit event records for security-relevant import boundary decisions. Audit events are emitted through `IAuditEventSink`; the default implementation is `LoggingAuditEventSink`, which writes named structured fields through the dedicated `CarbonOps.Api.Audit` logger category.
+
+Current audit event types:
+
+- `import.authorization_failed`
+- `import.validation_failed`
+- `import.accepted`
+
+Audit events include safe structured fields where applicable:
+
+- `event_id`
+- `event_type`
+- `occurred_at_utc`
+- `severity`
+- `endpoint`
+- `correlation_id`
+- `authentication_scheme`
+- `tenant_id`
+- `outcome`
+- `reason_code`
+- `batch_id`
+- `validation_status`
+- `accepted_records`
+- `rejected_records`
+- `error_count`
+- `warning_count`
+- `persisted`
+- `import_execution`
+
+Auth failure audit events use normalized reason codes, such as `invalid_api_key`, instead of raw secret-bearing inputs. Validation failure audit events use the API error code. Accepted import audit events include the configured tenant id and import boundary counters after successful authentication and validation.
+
+This is not durable audit persistence. Audit events are not written to database tables, a queue, or an external SIEM/exporter in OPS-028.
+
 ## Secret Redaction And Non-Leakage
 
 Application logs must not include:
@@ -102,11 +137,14 @@ Application logs must not include:
 
 OPS-026/OPS-027 tests assert that import auth failure and accepted import logs do not contain API keys, hashes, configured scope values, plaintext dev key material, raw invalid correlation id values, or the raw `X-Api-Key` header name.
 
+OPS-028 tests assert that audit event logs do not contain provided API keys, configured hashes, configured scope values, plaintext development key material, raw headers, or request bodies.
+
 ## Current Boundaries
 
-OPS-026/OPS-027 do not add:
+OPS-026/OPS-027/OPS-028 do not add:
 
-- durable audit event model; OPS-028 covers this,
+- durable audit persistence,
+- external audit/SIEM integration,
 - rate limiting; OPS-029 covers this,
 - database logging,
 - third-party logging providers,
