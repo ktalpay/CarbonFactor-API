@@ -92,4 +92,5 @@ PT-002 does not add:
 ## Follow-Up Mapping
 
 - PT-003 adds OpenAPI-adjacent public metadata drift checking.
-- PT-004 should perform the production parity review.
+- PT-004 performs the production parity review documented in
+  `docs/production-parity-review.md`.

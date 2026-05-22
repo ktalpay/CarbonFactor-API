@@ -91,4 +91,6 @@ If the project later adds full OpenAPI document generation, keep this metadata b
 
 ## Follow-Up
 
-PT-004 should perform the production parity review using PT-001, PT-002, and PT-003 as inputs.
+PT-004 performs the production parity review using PT-001, PT-002, PT-003,
+and the OPS-033 production runbook as inputs. See
+`docs/production-parity-review.md`.
