@@ -12,6 +12,8 @@ The REL-001 review is captured in `docs/production-readiness-review.md`.
 
 The REL-002 release candidate checkpoint is captured in `docs/release-candidate-checkpoint.md`.
 
+PRD-001 redefines the future production-ready target as self-hosted distribution readiness. Under that definition, the repository is not self-hosted production-ready yet; see `docs/self-hosted-production-readiness.md`.
+
 DOC-004 does not change runtime behavior, public API contracts, fixtures, metadata baselines, Docker packaging, scripts, or deployment infrastructure.
 
 ## Current Readiness Summary
