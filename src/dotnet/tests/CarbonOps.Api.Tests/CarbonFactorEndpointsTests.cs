@@ -12,6 +12,7 @@ namespace CarbonOps.Api.Tests;
 public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
 {
     private const string TestApiKey = "test-import-api-key";
+    private const string TestApiKeyHash = "f9ffdcc248b716dfc2dbee5492ecbabab672b7d19522859ad3b0a0fd49a86fd0";
     private const string TestTenantId = "tenant-dev-001";
     private const string ImportScope = "carbon_factors:import";
     private readonly HttpClient client;
@@ -26,12 +27,7 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
             builder.UseEnvironment("Testing");
             builder.ConfigureAppConfiguration((_, configuration) =>
             {
-                configuration.AddInMemoryCollection(new Dictionary<string, string?>
-                {
-                    ["Security:ApiKey:ImportEndpointKey"] = TestApiKey,
-                    ["Security:ApiKey:ImportTenantId"] = TestTenantId,
-                    ["Security:ApiKey:ImportEndpointScopes:0"] = ImportScope
-                });
+                configuration.AddInMemoryCollection(CreateApiKeyConfiguration());
             });
         });
 
@@ -287,6 +283,60 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
 
 
     [Fact]
+    public async Task ImportCarbonFactorsReturnsUnauthorizedWhenApiKeyHashConfigIsMissing()
+    {
+        using var hashlessFactory = sourceFactory.WithWebHostBuilder(builder =>
+        {
+            builder.UseEnvironment("Testing");
+            builder.ConfigureAppConfiguration((_, configuration) =>
+            {
+                configuration.AddInMemoryCollection(CreateApiKeyConfiguration(apiKeyHash: null));
+            });
+        });
+
+        using var hashlessClient = hashlessFactory.CreateClient();
+        using var request = CreateImportRequestMessage(CreateValidImportRequest(), TestApiKey);
+
+        var response = await hashlessClient.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        var responseBody = await response.Content.ReadAsStringAsync();
+        var payload = JsonDocument.Parse(responseBody).RootElement;
+        AssertErrorShape(payload, "unauthorized", "Unauthorized");
+        Assert.Equal("import endpoint API key hash is not configured", payload.GetProperty("details").GetProperty("reason").GetString());
+        Assert.DoesNotContain(TestApiKey, responseBody, StringComparison.Ordinal);
+        Assert.DoesNotContain(TestApiKeyHash, responseBody, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ImportCarbonFactorsReturnsUnauthorizedWhenApiKeyHashConfigIsInvalid()
+    {
+        const string InvalidConfiguredHash = "not-a-sha256-hex";
+
+        using var invalidHashFactory = sourceFactory.WithWebHostBuilder(builder =>
+        {
+            builder.UseEnvironment("Testing");
+            builder.ConfigureAppConfiguration((_, configuration) =>
+            {
+                configuration.AddInMemoryCollection(CreateApiKeyConfiguration(apiKeyHash: InvalidConfiguredHash));
+            });
+        });
+
+        using var invalidHashClient = invalidHashFactory.CreateClient();
+        using var request = CreateImportRequestMessage(CreateValidImportRequest(), TestApiKey);
+
+        var response = await invalidHashClient.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        var responseBody = await response.Content.ReadAsStringAsync();
+        var payload = JsonDocument.Parse(responseBody).RootElement;
+        AssertErrorShape(payload, "unauthorized", "Unauthorized");
+        Assert.Equal("import endpoint API key hash is invalid", payload.GetProperty("details").GetProperty("reason").GetString());
+        Assert.DoesNotContain(TestApiKey, responseBody, StringComparison.Ordinal);
+        Assert.DoesNotContain(InvalidConfiguredHash, responseBody, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task ImportCarbonFactorsReturnsUnauthorizedWhenApiKeyIsMissing()
     {
         var response = await client.PostAsJsonAsync("/carbon-factors/import", CreateValidImportRequest());
@@ -297,6 +347,7 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
         AssertErrorShape(payload, "unauthorized", "Unauthorized");
         Assert.Equal("missing API key", payload.GetProperty("details").GetProperty("reason").GetString());
         Assert.DoesNotContain(TestApiKey, responseBody, StringComparison.Ordinal);
+        Assert.DoesNotContain(TestApiKeyHash, responseBody, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -310,7 +361,28 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
         AssertErrorShape(payload, "unauthorized", "Unauthorized");
         Assert.Equal("invalid API key", payload.GetProperty("details").GetProperty("reason").GetString());
         Assert.DoesNotContain(TestApiKey, responseBody, StringComparison.Ordinal);
+        Assert.DoesNotContain(TestApiKeyHash, responseBody, StringComparison.Ordinal);
         Assert.DoesNotContain("invalid-key", responseBody, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ImportCarbonFactorsDoesNotRequirePlaintextKeyConfigWhenHashMatches()
+    {
+        using var plaintextFactory = sourceFactory.WithWebHostBuilder(builder =>
+        {
+            builder.UseEnvironment("Testing");
+            builder.ConfigureAppConfiguration((_, configuration) =>
+            {
+                configuration.AddInMemoryCollection(CreateApiKeyConfiguration(plaintextKey: "wrong-plaintext-key"));
+            });
+        });
+
+        using var plaintextClient = plaintextFactory.CreateClient();
+        using var request = CreateImportRequestMessage(CreateValidImportRequest(), TestApiKey);
+
+        var response = await plaintextClient.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
     }
 
 
@@ -322,21 +394,12 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
             builder.UseEnvironment("Testing");
             builder.ConfigureAppConfiguration((_, configuration) =>
             {
-                configuration.AddInMemoryCollection(new Dictionary<string, string?>
-                {
-                    ["Security:ApiKey:ImportEndpointKey"] = TestApiKey,
-                    ["Security:ApiKey:ImportTenantId"] = string.Empty,
-                    ["Security:ApiKey:ImportEndpointScopes:0"] = ImportScope
-                });
+                configuration.AddInMemoryCollection(CreateApiKeyConfiguration(tenantId: string.Empty));
             });
         });
 
         using var tenantlessClient = tenantlessFactory.CreateClient();
-        using var request = new HttpRequestMessage(HttpMethod.Post, "/carbon-factors/import")
-        {
-            Content = JsonContent.Create(CreateValidImportRequest())
-        };
-        request.Headers.TryAddWithoutValidation("X-Api-Key", TestApiKey);
+        using var request = CreateImportRequestMessage(CreateValidImportRequest(), TestApiKey);
 
         var response = await tenantlessClient.SendAsync(request);
 
@@ -346,6 +409,7 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
         AssertErrorShape(payload, "unauthorized", "Unauthorized");
         Assert.Equal("import tenant is not configured", payload.GetProperty("details").GetProperty("reason").GetString());
         Assert.DoesNotContain(TestApiKey, responseBody, StringComparison.Ordinal);
+        Assert.DoesNotContain(TestApiKeyHash, responseBody, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -356,11 +420,7 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
             builder.UseEnvironment("Testing");
             builder.ConfigureAppConfiguration((_, configuration) =>
             {
-                configuration.AddInMemoryCollection(new Dictionary<string, string?>
-                {
-                    ["Security:ApiKey:ImportEndpointKey"] = TestApiKey,
-                    ["Security:ApiKey:ImportTenantId"] = TestTenantId
-                });
+                configuration.AddInMemoryCollection(CreateApiKeyConfiguration(includeScope: false));
             });
         });
 
@@ -375,6 +435,7 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
         AssertErrorShape(payload, "unauthorized", "Unauthorized");
         Assert.Equal("import endpoint scope is not configured", payload.GetProperty("details").GetProperty("reason").GetString());
         Assert.DoesNotContain(TestApiKey, responseBody, StringComparison.Ordinal);
+        Assert.DoesNotContain(TestApiKeyHash, responseBody, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -385,12 +446,7 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
             builder.UseEnvironment("Testing");
             builder.ConfigureAppConfiguration((_, configuration) =>
             {
-                configuration.AddInMemoryCollection(new Dictionary<string, string?>
-                {
-                    ["Security:ApiKey:ImportEndpointKey"] = TestApiKey,
-                    ["Security:ApiKey:ImportTenantId"] = TestTenantId,
-                    ["Security:ApiKey:ImportEndpointScopes:0"] = string.Empty
-                });
+                configuration.AddInMemoryCollection(CreateApiKeyConfiguration(importScope: string.Empty));
             });
         });
 
@@ -405,6 +461,7 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
         AssertErrorShape(payload, "unauthorized", "Unauthorized");
         Assert.Equal("import endpoint scope is not configured", payload.GetProperty("details").GetProperty("reason").GetString());
         Assert.DoesNotContain(TestApiKey, responseBody, StringComparison.Ordinal);
+        Assert.DoesNotContain(TestApiKeyHash, responseBody, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -417,12 +474,7 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
             builder.UseEnvironment("Testing");
             builder.ConfigureAppConfiguration((_, configuration) =>
             {
-                configuration.AddInMemoryCollection(new Dictionary<string, string?>
-                {
-                    ["Security:ApiKey:ImportEndpointKey"] = TestApiKey,
-                    ["Security:ApiKey:ImportTenantId"] = TestTenantId,
-                    ["Security:ApiKey:ImportEndpointScopes:0"] = WrongScope
-                });
+                configuration.AddInMemoryCollection(CreateApiKeyConfiguration(importScope: WrongScope));
             });
         });
 
@@ -437,6 +489,7 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
         AssertErrorShape(payload, "unauthorized", "Unauthorized");
         Assert.Equal("API key is not permitted to import carbon factors", payload.GetProperty("details").GetProperty("reason").GetString());
         Assert.DoesNotContain(TestApiKey, responseBody, StringComparison.Ordinal);
+        Assert.DoesNotContain(TestApiKeyHash, responseBody, StringComparison.Ordinal);
         Assert.DoesNotContain(WrongScope, responseBody, StringComparison.Ordinal);
     }
 
@@ -686,6 +739,38 @@ public sealed class CarbonFactorEndpointsTests : IClassFixture<WebApplicationFac
         }
     }
 
+
+    private static Dictionary<string, string?> CreateApiKeyConfiguration(
+        string? apiKeyHash = TestApiKeyHash,
+        string? tenantId = TestTenantId,
+        string? importScope = ImportScope,
+        bool includeScope = true,
+        string? plaintextKey = null)
+    {
+        var configuration = new Dictionary<string, string?>();
+
+        if (apiKeyHash is not null)
+        {
+            configuration["Security:ApiKey:ImportEndpointKeyHash"] = apiKeyHash;
+        }
+
+        if (plaintextKey is not null)
+        {
+            configuration["Security:ApiKey:ImportEndpointKey"] = plaintextKey;
+        }
+
+        if (tenantId is not null)
+        {
+            configuration["Security:ApiKey:ImportTenantId"] = tenantId;
+        }
+
+        if (includeScope)
+        {
+            configuration["Security:ApiKey:ImportEndpointScopes:0"] = importScope;
+        }
+
+        return configuration;
+    }
 
     private Task<HttpResponseMessage> PostImportRequestAsync(object request, string? apiKey = TestApiKey)
     {

@@ -105,9 +105,15 @@ internal static class CarbonFactorEndpoints
 
     private static ApplicationResult<ImportAuthenticationContext> EnsureAuthorized(HttpRequest request, ApiKeyAuthenticationOptions options)
     {
-        if (string.IsNullOrWhiteSpace(options.ImportEndpointKey))
+        var configuredKeyHash = options.ImportEndpointKeyHash?.Trim();
+        if (string.IsNullOrWhiteSpace(configuredKeyHash))
         {
-            return ApplicationResult<ImportAuthenticationContext>.Failure(ApiError.Unauthorized("import endpoint API key is not configured"));
+            return ApplicationResult<ImportAuthenticationContext>.Failure(ApiError.Unauthorized("import endpoint API key hash is not configured"));
+        }
+
+        if (!ApiKeyHashVerifier.IsValidSha256HexHash(configuredKeyHash))
+        {
+            return ApplicationResult<ImportAuthenticationContext>.Failure(ApiError.Unauthorized("import endpoint API key hash is invalid"));
         }
 
         if (!request.Headers.TryGetValue(ApiKeyAuthenticationOptions.HeaderName, out var providedApiKey)
@@ -116,7 +122,7 @@ internal static class CarbonFactorEndpoints
             return ApplicationResult<ImportAuthenticationContext>.Failure(ApiError.Unauthorized("missing API key"));
         }
 
-        if (!string.Equals(providedApiKey.ToString(), options.ImportEndpointKey, StringComparison.Ordinal))
+        if (!ApiKeyHashVerifier.VerifySha256Hex(providedApiKey.ToString(), configuredKeyHash))
         {
             return ApplicationResult<ImportAuthenticationContext>.Failure(ApiError.Unauthorized("invalid API key"));
         }

@@ -273,10 +273,10 @@ See also: `docs/ingestion-production-readiness.md` for ING-007 production-readin
 - Authentication header: `X-Api-Key`.
 - Protected route(s): `POST /carbon-factors/import` only.
 - Current read endpoints remain public in this phase (`GET /carbon-factors`, `GET /carbon-factors/search`, `GET /carbon-factors/{factorId}`).
-- API key value is configuration-driven via `Security:ApiKey:ImportEndpointKey`.
-- If `Security:ApiKey:ImportEndpointKey` is missing/blank, import endpoint fails closed with `401 unauthorized`.
+- API key authentication remains configuration-driven. The accepted key is now stored as a one-way hash via `Security:ApiKey:ImportEndpointKeyHash` (see SEC-004).
+- If `Security:ApiKey:ImportEndpointKeyHash` is missing/blank, import endpoint fails closed with `401 unauthorized`.
 - Missing or invalid key returns deterministic `401` envelope (`code=unauthorized`) without echoing key material.
-- `appsettings.Development.json` may contain an obvious non-production placeholder for local/testing only.
+- `appsettings.Development.json` contains only a non-production placeholder hash for local/testing.
 - Tenant/company scoping is covered by SEC-002.
 - Scope authorization is covered by SEC-003.
 
@@ -284,7 +284,7 @@ See also: `docs/ingestion-production-readiness.md` for ING-007 production-readin
 
 - `POST /carbon-factors/import` remains protected by `X-Api-Key`.
 - Import authentication remains configuration-driven, and now requires both:
-  - `Security:ApiKey:ImportEndpointKey`
+  - `Security:ApiKey:ImportEndpointKeyHash`
   - `Security:ApiKey:ImportTenantId`
 - A valid import API key resolves deterministic tenant identity from configuration (no DB lookup).
 - If tenant configuration is missing, the import endpoint fails closed with deterministic `401 unauthorized`.
@@ -300,7 +300,7 @@ See also: `docs/ingestion-production-readiness.md` for ING-007 production-readin
 
 - `POST /carbon-factors/import` remains protected by the required `X-Api-Key` header.
 - Import authentication remains configuration-driven:
-  - `Security:ApiKey:ImportEndpointKey` supplies the accepted API key.
+  - `Security:ApiKey:ImportEndpointKeyHash` supplies the accepted API key hash.
   - `Security:ApiKey:ImportTenantId` supplies the deterministic tenant id for the accepted import boundary audit metadata.
   - `Security:ApiKey:ImportEndpointScopes` supplies the configured API key scopes.
 - The required import scope is `carbon_factors:import`.
@@ -309,4 +309,15 @@ See also: `docs/ingestion-production-readiness.md` for ING-007 production-readin
   - `tenant_id` is stamped from `Security:ApiKey:ImportTenantId`.
   - `authentication_scheme` is stamped as `"api_key"`.
 - The public import response shape does not expose configured or authorized scopes.
-- DB-backed token registry, token hashing/storage, revoke, and rotation remain later SEC tasks.
+- DB-backed token registry, per-token metadata, revoke, rotation, expiry, and audit events remain later SEC tasks.
+
+## API key token hashing/storage (SEC-004)
+
+- `POST /carbon-factors/import` still requires the `X-Api-Key` request header.
+- The accepted import key is configured only as `Security:ApiKey:ImportEndpointKeyHash`.
+- The baseline hash format is lowercase SHA-256 hex of the UTF-8 API key value.
+- The development hash in `appsettings.Development.json` corresponds to the non-production placeholder key `dev-import-key-not-for-production`.
+- Missing, blank, or invalid hash configuration fails closed with deterministic `401 unauthorized`.
+- Provided API keys, configured plaintext keys, and configured hashes are never echoed in error responses.
+- This is still a narrow config-driven authentication model, not a DB-backed token registry.
+- Token registry, per-token metadata, revoke, rotation, expiry, and audit event persistence remain later SEC tasks.

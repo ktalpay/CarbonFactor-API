@@ -147,7 +147,7 @@ This review indicates ingestion boundary behavior is consistent and deterministi
 
 - Import endpoint security now includes deterministic tenant identity resolution from config.
 - Required configuration for protected import boundary:
-  - `Security:ApiKey:ImportEndpointKey`
+  - `Security:ApiKey:ImportEndpointKeyHash`
   - `Security:ApiKey:ImportTenantId`
 - Missing tenant configuration fails closed with deterministic `401 unauthorized`.
 - Accepted boundary responses expose tenant context in audit metadata (`tenant_id`, `authentication_scheme`).
