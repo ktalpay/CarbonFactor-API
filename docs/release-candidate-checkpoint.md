@@ -8,6 +8,8 @@ REL-002 is the production release candidate checkpoint for the current CarbonOps
 
 This checkpoint records the final review position, validation checklist, controlled/internal pilot constraints, broad production blockers, and operator handoff references for the current `develop` baseline.
 
+PRD-001 later reframes the production-ready target as self-hosted distribution readiness. REL-002 remains the historical controlled/internal pilot checkpoint, not final self-hosted readiness. See `docs/self-hosted-production-readiness.md`.
+
 REL-002 is not a production deployment, broad production approval, GitHub release, version tag, release automation task, runtime implementation task, or generated artifact task.
 
 ## Checkpoint Summary

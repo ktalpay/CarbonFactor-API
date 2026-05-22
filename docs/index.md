@@ -27,6 +27,7 @@
 ## Roadmap And Readiness
 
 - [Production Readiness Backlog](production-readiness-backlog.md)
+- [Self-Hosted Production Readiness](self-hosted-production-readiness.md)
 - [Production Readiness](production-readiness.md)
 - [Production Readiness Review](production-readiness-review.md)
 - [Release Candidate Checkpoint](release-candidate-checkpoint.md)
