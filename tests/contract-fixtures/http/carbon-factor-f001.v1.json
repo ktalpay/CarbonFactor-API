@@ -1,0 +1,13 @@
+{
+  "factor": {
+    "id": "f-001",
+    "source": "synthetic",
+    "category": "electricity",
+    "activity": "grid electricity",
+    "factor_value": 0.42,
+    "factor_unit": "kgCO2e/kWh",
+    "region": "US-WEST",
+    "year": 2024,
+    "notes": "grid sample"
+  }
+}

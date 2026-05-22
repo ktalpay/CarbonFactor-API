@@ -8,6 +8,10 @@ See `docs/contract-parity.md` and
 manifest that records current route families, response field groups, error
 envelopes, header behavior, and explicit PT-001 non-goals.
 
+See `docs/response-fixtures.md` and `tests/contract-fixtures/http/` for the
+PT-002 checked-in response fixtures that lock representative public response
+shapes.
+
 ## Parity Goals
 
 - Same documented routes or route equivalents.
@@ -46,8 +50,9 @@ PT-001 adds a tested baseline manifest. The current Python side remains a
 legacy read-only contract foundation for `/factors` and transport envelopes.
 The current .NET side is the source of truth for the modern `/carbon-factors`,
 `/v1`, protected import, security, observability, and operational endpoint
-surface. PT-001 does not add response fixture comparison, OpenAPI drift checks,
-generated clients, or Python SDK redesign.
+surface. PT-002 adds representative response fixture comparison for the .NET
+public surface and fixture availability checks for Python. OpenAPI drift checks,
+generated clients, and Python SDK redesign remain out of scope.
 
 The repository now includes `src/python` as the current Python implementation
 root and `src/dotnet` as the initial .NET Clean Architecture solution skeleton.

@@ -1,0 +1,33 @@
+{
+  "batch_id": "batch-1",
+  "audit": {
+    "audit_id": "fd4b492a5cf0774f834b133f6d8edac106d2d9f80e382daa776f37d8f5f29350",
+    "batch_id": "batch-1",
+    "contract_version": "1.0",
+    "source_system": "parser",
+    "source_family": "electricity",
+    "source_provider": "synthetic",
+    "publication": "pub",
+    "publication_version": "v1",
+    "parser_name": null,
+    "parser_version": null,
+    "parser_run_id": null,
+    "generated_at_utc": null,
+    "evaluated_at_utc": null,
+    "tenant_id": "tenant-dev-001",
+    "authentication_scheme": "api_key"
+  },
+  "accepted_records": 1,
+  "rejected_records": 0,
+  "status": "accepted",
+  "validation_status": "accepted",
+  "total_records": 1,
+  "warning_count": 0,
+  "error_count": 0,
+  "has_warnings": false,
+  "has_errors": false,
+  "persisted": false,
+  "import_execution": "not_started",
+  "warnings": [],
+  "errors": []
+}

@@ -1,0 +1,7 @@
+{
+  "code": "unauthorized",
+  "message": "Unauthorized",
+  "details": {
+    "reason": "missing API key"
+  }
+}

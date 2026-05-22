@@ -16,6 +16,7 @@
 
 - [API Contract](api-contract.md)
 - [Contract Parity](contract-parity.md)
+- [Response Fixtures](response-fixtures.md)
 - [HTTP Adapter](http-adapter.md)
 - [Transport Boundary](transport-boundary.md)
 

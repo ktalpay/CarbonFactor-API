@@ -1,0 +1,7 @@
+{
+  "code": "rate_limited",
+  "message": "Too many requests",
+  "details": {
+    "reason": "rate limit exceeded"
+  }
+}

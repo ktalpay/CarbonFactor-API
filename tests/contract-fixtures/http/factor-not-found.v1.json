@@ -1,0 +1,7 @@
+{
+  "code": "not_found",
+  "message": "factor not found",
+  "details": {
+    "id": "missing-factor"
+  }
+}

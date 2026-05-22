@@ -10,6 +10,13 @@ The baseline lives at:
 tests/contract-parity/contract-parity-baseline.json
 ```
 
+Response fixture comparison added by PT-002 is documented in
+`docs/response-fixtures.md`. The checked-in fixtures live under:
+
+```text
+tests/contract-fixtures/http/
+```
+
 ## Purpose
 
 The repository has two runtime roots:
@@ -149,6 +156,7 @@ PT-001 does not add:
 
 ## Follow-Up Mapping
 
-- PT-002 should add response fixture comparison.
+- PT-002 adds response fixture comparison for representative public contract
+  shapes.
 - PT-003 should add OpenAPI contract drift checking.
 - PT-004 should perform the production parity review.
