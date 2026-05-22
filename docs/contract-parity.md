@@ -25,6 +25,10 @@ baseline lives under:
 tests/contract-fixtures/openapi/openapi-public-metadata-baseline.json
 ```
 
+The PT-004 production parity review is documented in
+`docs/production-parity-review.md`. It uses PT-001, PT-002, PT-003, and
+the OPS-033 production runbook as inputs before REL-001.
+
 ## Purpose
 
 The repository has two runtime roots:
@@ -167,4 +171,4 @@ PT-001 does not add:
 - PT-002 adds response fixture comparison for representative public contract
   shapes.
 - PT-003 adds OpenAPI-adjacent public metadata drift checking.
-- PT-004 should perform the production parity review.
+- PT-004 performs the production parity review before REL-001.
