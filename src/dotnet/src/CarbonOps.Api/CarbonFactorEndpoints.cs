@@ -30,8 +30,14 @@ internal static class CarbonFactorEndpoints
 
     public static IEndpointRouteBuilder MapCarbonFactorEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        var group = endpoints.MapGroup("/carbon-factors");
+        MapCarbonFactorEndpointGroup(endpoints.MapGroup("/carbon-factors"));
+        MapCarbonFactorEndpointGroup(endpoints.MapGroup($"/{CarbonOpsApiVersions.V1}/carbon-factors"));
 
+        return endpoints;
+    }
+
+    private static void MapCarbonFactorEndpointGroup(RouteGroupBuilder group)
+    {
         group.MapGet("/", (HttpRequest request, CarbonFactorUseCases useCases) =>
             ListCarbonFactors(request, useCases))
             .WithMetadata(CarbonFactorEndpointExamples.ListFactorsSuccess)
@@ -67,8 +73,6 @@ internal static class CarbonFactorEndpoints
                     loggerFactory.CreateLogger("CarbonOps.Api.Import"),
                     auditEventSink))
             .RequireRateLimiting(CarbonOpsRateLimitingPolicyNames.Import);
-
-        return endpoints;
     }
 
     private static IResult ListCarbonFactors(HttpRequest request, CarbonFactorUseCases useCases)
@@ -109,13 +113,15 @@ internal static class CarbonFactorEndpoints
         ILogger logger,
         IAuditEventSink auditEventSink)
     {
+        var importEndpointPath = ResolveImportEndpointPath(httpRequest.HttpContext);
         var importAuthResult = EnsureAuthorized(httpRequest, apiKeyOptions);
         if (!importAuthResult.IsSuccess)
         {
-            LogImportAuthorizationFailure(logger, importAuthResult.Error!);
+            LogImportAuthorizationFailure(logger, importEndpointPath, importAuthResult.Error!);
             await auditEventSink.WriteAsync(
                 CreateImportAuthorizationFailedAuditEvent(
                     httpRequest.HttpContext,
+                    importEndpointPath,
                     ResolveAuthorizationFailureReason(importAuthResult.Error!)),
                 httpRequest.HttpContext.RequestAborted);
         }
@@ -125,10 +131,11 @@ internal static class CarbonFactorEndpoints
         var result = boundaryService.ValidateAndAccept(request);
         if (!result.IsSuccess)
         {
-            LogImportValidationFailure(logger, result.Error!);
+            LogImportValidationFailure(logger, importEndpointPath, result.Error!);
             await auditEventSink.WriteAsync(
                 CreateImportValidationFailedAuditEvent(
                     httpRequest.HttpContext,
+                    importEndpointPath,
                     importAuthContext,
                     result.Error!),
                 httpRequest.HttpContext.RequestAborted);
@@ -144,12 +151,12 @@ internal static class CarbonFactorEndpoints
             }
         };
 
-        LogImportAccepted(logger, scopedResult);
+        LogImportAccepted(logger, importEndpointPath, scopedResult);
         await auditEventSink.WriteAsync(
-            CreateImportAcceptedAuditEvent(httpRequest.HttpContext, scopedResult),
+            CreateImportAcceptedAuditEvent(httpRequest.HttpContext, importEndpointPath, scopedResult),
             httpRequest.HttpContext.RequestAborted);
 
-        return TypedResults.Accepted($"/carbon-factors/import/{scopedResult.BatchId}", scopedResult);
+        return TypedResults.Accepted($"{importEndpointPath}/{scopedResult.BatchId}", scopedResult);
     }
 
     private static ApplicationResult<ImportAuthenticationContext> EnsureAuthorized(HttpRequest request, ApiKeyAuthenticationOptions options)
@@ -227,28 +234,31 @@ internal static class CarbonFactorEndpoints
             new ImportAuthenticationContext(options.ImportTenantId.Trim(), ImportAuthenticationScheme));
     }
 
-    private static void LogImportAuthorizationFailure(ILogger logger, ApiError error)
+    private static void LogImportAuthorizationFailure(ILogger logger, string endpointPath, ApiError error)
     {
         logger.LogWarning(
             "CarbonOps import authorization failed {endpoint} {auth_failure_reason} {authentication_scheme}",
-            ImportEndpointPath,
+            endpointPath,
             ResolveAuthorizationFailureReason(error),
             ImportAuthenticationScheme);
     }
 
-    private static void LogImportValidationFailure(ILogger logger, ApiError error)
+    private static void LogImportValidationFailure(ILogger logger, string endpointPath, ApiError error)
     {
         logger.LogInformation(
             "CarbonOps import validation failed {endpoint} {validation_failure_reason}",
-            ImportEndpointPath,
+            endpointPath,
             ResolveErrorReason(error));
     }
 
-    private static void LogImportAccepted(ILogger logger, CarbonFactorImportBoundaryResponse response)
+    private static void LogImportAccepted(
+        ILogger logger,
+        string endpointPath,
+        CarbonFactorImportBoundaryResponse response)
     {
         logger.LogInformation(
             "CarbonOps import request accepted {endpoint} {authentication_scheme} {tenant_id} {batch_id} {validation_status} {accepted_records} {rejected_records} {error_count} {warning_count} {persisted} {import_execution}",
-            ImportEndpointPath,
+            endpointPath,
             response.Audit.AuthenticationScheme,
             response.Audit.TenantId,
             response.BatchId,
@@ -263,12 +273,14 @@ internal static class CarbonFactorEndpoints
 
     private static AuditEvent CreateImportAuthorizationFailedAuditEvent(
         HttpContext httpContext,
+        string endpointPath,
         string reasonCode)
     {
         return CreateAuditEvent(
             eventType: AuditEventTypes.ImportAuthorizationFailed,
             severity: AuditEventSeverity.Warning,
             httpContext: httpContext,
+            endpointPath: endpointPath,
             outcome: AuditEventOutcomes.Failure,
             reasonCode: reasonCode,
             authenticationScheme: ImportAuthenticationScheme);
@@ -276,6 +288,7 @@ internal static class CarbonFactorEndpoints
 
     private static AuditEvent CreateImportValidationFailedAuditEvent(
         HttpContext httpContext,
+        string endpointPath,
         ImportAuthenticationContext importAuthContext,
         ApiError error)
     {
@@ -283,6 +296,7 @@ internal static class CarbonFactorEndpoints
             eventType: AuditEventTypes.ImportValidationFailed,
             severity: AuditEventSeverity.Information,
             httpContext: httpContext,
+            endpointPath: endpointPath,
             outcome: AuditEventOutcomes.Failure,
             reasonCode: ResolveValidationFailureReason(error),
             authenticationScheme: importAuthContext.AuthenticationScheme,
@@ -291,12 +305,14 @@ internal static class CarbonFactorEndpoints
 
     private static AuditEvent CreateImportAcceptedAuditEvent(
         HttpContext httpContext,
+        string endpointPath,
         CarbonFactorImportBoundaryResponse response)
     {
         return CreateAuditEvent(
             eventType: AuditEventTypes.ImportAccepted,
             severity: AuditEventSeverity.Information,
             httpContext: httpContext,
+            endpointPath: endpointPath,
             outcome: AuditEventOutcomes.Success,
             authenticationScheme: response.Audit.AuthenticationScheme,
             tenantId: response.Audit.TenantId,
@@ -314,6 +330,7 @@ internal static class CarbonFactorEndpoints
         string eventType,
         string severity,
         HttpContext httpContext,
+        string endpointPath,
         string outcome,
         string? reasonCode = null,
         string? authenticationScheme = null,
@@ -332,7 +349,7 @@ internal static class CarbonFactorEndpoints
             EventType: eventType,
             OccurredAtUtc: DateTimeOffset.UtcNow,
             Severity: severity,
-            Endpoint: ImportEndpointPath,
+            Endpoint: endpointPath,
             CorrelationId: httpContext.GetCorrelationId(),
             Outcome: outcome,
             ReasonCode: reasonCode,
@@ -346,6 +363,13 @@ internal static class CarbonFactorEndpoints
             WarningCount: warningCount,
             Persisted: persisted,
             ImportExecution: importExecution);
+    }
+
+    private static string ResolveImportEndpointPath(HttpContext httpContext)
+    {
+        return httpContext.Request.Path.HasValue
+            ? httpContext.Request.Path.Value!
+            : ImportEndpointPath;
     }
 
     private static string ResolveAuthorizationFailureReason(ApiError error)

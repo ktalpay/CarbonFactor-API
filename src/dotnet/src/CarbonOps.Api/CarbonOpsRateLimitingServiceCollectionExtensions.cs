@@ -164,7 +164,7 @@ internal static class CarbonOpsRateLimitingServiceCollectionExtensions
 
     private static string ResolvePolicyName(string endpoint)
     {
-        return string.Equals(endpoint, "/carbon-factors/import", StringComparison.Ordinal)
+        return endpoint.EndsWith("/carbon-factors/import", StringComparison.Ordinal)
             ? CarbonOpsRateLimitingPolicyNames.Import
             : CarbonOpsRateLimitingPolicyNames.Read;
     }
