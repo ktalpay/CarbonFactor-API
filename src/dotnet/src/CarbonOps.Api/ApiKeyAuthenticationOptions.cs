@@ -8,4 +8,6 @@ internal sealed class ApiKeyAuthenticationOptions
     public string? ImportEndpointKey { get; init; }
 
     public string? ImportTenantId { get; init; }
+
+    public string[] ImportEndpointScopes { get; init; } = [];
 }
